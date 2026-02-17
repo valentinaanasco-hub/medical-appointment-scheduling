@@ -1,2 +1,42 @@
-/medical-appointment-scheduling/target/
+# --- Directorios de Compilación y Artefactos ---
 /target/
+/medical-appointment-scheduling/target/
+bin/
+build/
+out/
+*.class
+*.jar
+*.war
+*.ear
+
+# --- Base de Datos SQLite (Muy importante) ---
+# Ignoramos el archivo de base de datos para evitar conflictos y subir datos locales
+*.db
+*.sqlite
+*.db-journal
+
+# --- NetBeans ---
+nbproject/private/
+nbbuild/
+nbdist/
+nbactions.xml
+.nb-gradle/
+
+# --- IntelliJ IDEA ---
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# --- VS Code ---
+.vscode/
+
+# --- Archivos de registro y temporales ---
+*.log
+tmp/
+temp/
+
+# --- Sistema Operativo ---
+.DS_Store
+Thumbs.db
+desktop.ini
