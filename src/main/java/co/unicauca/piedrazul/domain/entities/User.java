@@ -1,4 +1,4 @@
-package co.unicauca.piedrazul.domain;
+package co.unicauca.piedrazul.domain.entities;
 
 /**
  *
