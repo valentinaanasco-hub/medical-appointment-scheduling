@@ -127,6 +127,15 @@ public class User {
 
     // Método útil en dominio
     public String getFullName() {
-        return firstName + " " + middleName + " " + firstSurname + " " + lastName;
-    }
+    // Usamos un StringBuilder para construir el nombre dinámicamente
+    StringBuilder sb = new StringBuilder();
+    
+    if (firstName != null && !firstName.trim().isEmpty()) sb.append(firstName.trim()).append(" ");
+    if (middleName != null && !middleName.trim().isEmpty()) sb.append(middleName.trim()).append(" ");
+    if (firstSurname != null && !firstSurname.trim().isEmpty()) sb.append(firstSurname.trim()).append(" ");
+    if (lastName != null && !lastName.trim().isEmpty()) sb.append(lastName.trim()).append(" ");
+    
+    // .trim() al final elimina el último espacio sobrante
+    return sb.toString().trim();
+}
 }
