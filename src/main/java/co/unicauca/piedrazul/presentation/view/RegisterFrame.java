@@ -406,7 +406,7 @@ public class RegisterFrame extends javax.swing.JFrame {
             new LoginFrame(userService).setVisible(true);
             this.dispose();
         } else {
-            // Error si ell usuario ya existe
+            // Error si el usuario ya existe
             javax.swing.JOptionPane.showMessageDialog(this, result, "Error de registro", javax.swing.JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnRegistrarCuentaActionPerformed

@@ -23,6 +23,7 @@ public class User {
 
     // Constructor vacío (necesario para mapeo desde repositorio)
     public User() {
+        
     }
 
     // Constructor completo (útil para creación desde Service)
@@ -30,7 +31,6 @@ public class User {
             String firstSurname, String lastName,
             String username, String password,
             String state, int roleId, String email, String birthDate) {
-
         this.id = id;
         this.userTypeId = userTypeId;
         this.firstName = firstName;
@@ -145,6 +145,7 @@ public class User {
 
     // Método útil en dominio
     public String getFullName() {
+        
     // Usamos un StringBuilder para construir el nombre dinámicamente
     StringBuilder sb = new StringBuilder();
     

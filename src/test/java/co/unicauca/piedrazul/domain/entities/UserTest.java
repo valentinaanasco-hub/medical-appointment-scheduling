@@ -63,7 +63,6 @@ public class UserTest {
         user.setId(100);
         user.setUsername("santiago2026");
         user.setState("ACTIVE");
-
         assertEquals(100, user.getId());
         assertEquals("santiago2026", user.getUsername());
         assertEquals("ACTIVE", user.getState());
