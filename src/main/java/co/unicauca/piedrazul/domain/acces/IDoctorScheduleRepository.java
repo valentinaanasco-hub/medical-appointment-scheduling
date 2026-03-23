@@ -4,10 +4,24 @@
  */
 package co.unicauca.piedrazul.domain.acces;
 
+import co.unicauca.piedrazul.domain.entities.DoctorSchedule;
+import java.util.List;
+
 /**
  *
  * @author santi
  */
 public interface IDoctorScheduleRepository {
-    
+   
+    // Para registrar un horario disponible de un médico
+    boolean save(DoctorSchedule schedule, int doctorId);
+
+    // Para consultar todos los horarios de un médico específico
+    List<DoctorSchedule> findByDoctorId(int doctorId);
+
+    // Para modificar un horario existente
+    boolean update(DoctorSchedule schedule);
+
+    // Para eliminar un horario por su id
+    boolean delete(int scheduleId);
 }

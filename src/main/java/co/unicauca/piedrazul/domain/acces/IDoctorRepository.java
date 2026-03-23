@@ -4,10 +4,27 @@
  */
 package co.unicauca.piedrazul.domain.acces;
 
+import co.unicauca.piedrazul.domain.entities.Doctor;
+import co.unicauca.piedrazul.domain.entities.Patient;
+import java.util.List;
+
 /**
  *
  * @author santi
  */
 public interface IDoctorRepository {
-    
+// Para registrar un nuevo médico en el sistema
+    boolean save(Doctor doctor);
+
+    // Para buscar un médico por su id de usuario
+    Doctor findById(int id);
+
+    // Para listar todos los médicos activos e inactivos
+    List<Doctor> findAll();
+
+    // Para actualizar datos o estado del médico
+    boolean update(Doctor doctor);
+
+    // Para desactivar o eliminar un médico
+    boolean desactive(int id);
 }
