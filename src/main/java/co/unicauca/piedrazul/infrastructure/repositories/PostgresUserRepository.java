@@ -47,7 +47,6 @@ public class PostgresUserRepository implements IUserRepository {
 
     @Override
     public User findByUsername(String username) {
-        // CORRECCIÓN: La columna es user_username
         String sql = "SELECT * FROM users WHERE user_username = ?";
         
         try (Connection conn = PostgreSQLConnection.getConnection();
@@ -55,7 +54,6 @@ public class PostgresUserRepository implements IUserRepository {
             
             pstmt.setString(1, username);
             
-            // Usamos otro try para el ResultSet para que se cierre solo
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     User user = new User();

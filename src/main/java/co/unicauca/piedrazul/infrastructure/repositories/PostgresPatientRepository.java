@@ -18,7 +18,7 @@ import java.util.List;
  *
  * @author santi
  */
-public class PatientRepository implements ISpecialtyRepository{
+public class PostgresPatientRepository implements ISpecialtyRepository{
 
     @Override
     public boolean save(Specialty specialty) {

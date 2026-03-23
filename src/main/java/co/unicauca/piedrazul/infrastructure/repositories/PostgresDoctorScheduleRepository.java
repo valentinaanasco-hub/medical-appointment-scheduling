@@ -21,7 +21,7 @@ import java.util.List;
  *
  * @author santi
  */
-public class DoctorScheduleRepository implements IDoctorScheduleRepository {
+public class PostgresDoctorScheduleRepository implements IDoctorScheduleRepository {
     
     @Override
     public boolean save(DoctorSchedule schedule, int doctorId) {
