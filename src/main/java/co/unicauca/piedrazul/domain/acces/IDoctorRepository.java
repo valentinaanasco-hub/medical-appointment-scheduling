@@ -21,10 +21,13 @@ public interface IDoctorRepository {
 
     // Para listar todos los médicos activos e inactivos
     List<Doctor> findAll();
+    
+    // Para listar todos los medico activos
+    List<Doctor> findAllActive();
 
     // Para actualizar datos o estado del médico
     boolean update(Doctor doctor);
-
-    // Para desactivar o eliminar un médico
-    boolean desactive(int id);
+   
+    // Para desactivar un paciente sin eliminar su historial
+    boolean desactivate(int id);
 }

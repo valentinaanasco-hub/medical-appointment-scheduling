@@ -15,5 +15,8 @@ public interface IUserRepository {
     
     // Para actualizar estado o datos del usuario
     boolean update(User user);
+    
+    // Para desactivar un paciente sin eliminar su historial
+    boolean desactivate(int id);
 }
 

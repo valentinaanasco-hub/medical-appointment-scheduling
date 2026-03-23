@@ -8,7 +8,7 @@ package co.unicauca.piedrazul.domain.entities;
  *
  * @author santi
  */
-public class Patient {
+public class Patient extends User {
     private String phone;
     private String gender;
     private String birthDay;

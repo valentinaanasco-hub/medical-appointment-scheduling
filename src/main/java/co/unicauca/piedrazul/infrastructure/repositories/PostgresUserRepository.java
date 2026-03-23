@@ -103,7 +103,7 @@ public class PostgresUserRepository implements IUserRepository {
     
     @Override
     public boolean update(User user) {
-        // SQL corregido para usar user_id en el WHERE
+        
         String sql = "UPDATE users SET user_password = ?, user_first_name = ?, " +
                      "user_middle_name = ?, user_first_surname = ?, user_last_name = ?, user_state = ? " +
                      "WHERE user_id = ?";
@@ -122,6 +122,22 @@ public class PostgresUserRepository implements IUserRepository {
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error al actualizar: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    
+    @Override
+    public boolean desactivate(int id) {
+        // Cambia el estado a INACTIVO en lugar de eliminar, conservando el historial
+        String sql = "UPDATE users SET user_state = 'INACTIVO' WHERE user_id = ?";
+        try (Connection conn = PostgreSQLConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, id);
+            // executeUpdate retorna el número de filas afectadas
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error al desactivar usuario: " + e.getMessage());
             return false;
         }
     }
