@@ -29,6 +29,6 @@ public interface IPatientRepository {
     // Para actualizar datos del paciente
     boolean update(Patient patient);
 
-    // Para eliminar un paciente
+    // Para desactivar un paciente
     boolean desactivate(int id);
 }

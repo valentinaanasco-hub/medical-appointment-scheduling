@@ -20,7 +20,8 @@ public class DoctorSchedule {
     private LocalTime startTime;
     private LocalTime endTime;
     private int intervalMinutes;
-
+    
+    // Constructor vacío (necesario para mapeo desde repositorio)
     public DoctorSchedule() {}
 
     public int getScheduleId() { 

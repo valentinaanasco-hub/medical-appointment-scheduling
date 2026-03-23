@@ -15,11 +15,13 @@ import java.util.List;
  * @author Santiago Solarte 
  */
 
+
 public class Doctor extends User {
     private String professionalId;
     private List<DoctorSchedule> schedules = new ArrayList<>();
     private List<Specialty> specialties = new ArrayList<>();
 
+    // Constructor vacío (necesario para mapeo desde repositorio)
     public Doctor() {}
 
     public String getProfessionalId() { 

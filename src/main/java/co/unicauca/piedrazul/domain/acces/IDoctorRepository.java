@@ -17,7 +17,8 @@ import java.util.List;
  */
 
 public interface IDoctorRepository {
-// Para registrar un nuevo médico en el sistema
+    
+    // Para registrar un nuevo médico en el sistema
     boolean save(Doctor doctor);
 
     // Para buscar un médico por su id de usuario

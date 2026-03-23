@@ -24,6 +24,7 @@ public class Appointment {
     private Doctor doctor;
     private Patient patient;
 
+    // Constructor vacío (necesario para mapeo desde repositorio)
     public Appointment() {}
 
     public int getAppointmentId() { 

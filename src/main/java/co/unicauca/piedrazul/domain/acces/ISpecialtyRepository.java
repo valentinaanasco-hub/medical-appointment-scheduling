@@ -16,6 +16,7 @@ import java.util.List;
  */
 
 public interface ISpecialtyRepository {
+    
     // Para registrar una nueva especialidad
     boolean save(Specialty specialty);
 

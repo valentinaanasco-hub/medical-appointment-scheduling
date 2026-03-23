@@ -12,6 +12,7 @@ import java.util.List;
  */
 
 public interface IUserRepository {
+    
     // Para el registro de nuevos usuarios
     boolean save(User user);
     

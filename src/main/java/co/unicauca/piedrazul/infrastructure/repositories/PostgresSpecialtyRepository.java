@@ -40,11 +40,10 @@ public class PostgresSpecialtyRepository implements ISpecialtyRepository {
     public Specialty findById(int id) {
         String sql = "SELECT * FROM specialties WHERE spec_id = ?";
         try (Connection conn = PostgreSQLConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, id);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) return mapResultSetToSpecialty(rs);
-            }
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) return mapResultSetToSpecialty(rs); 
         } catch (SQLException e) {
             System.err.println("Error al buscar especialidad: " + e.getMessage());
         }
