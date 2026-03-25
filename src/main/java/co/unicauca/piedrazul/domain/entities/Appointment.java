@@ -1,5 +1,6 @@
 package co.unicauca.piedrazul.domain.entities;
 
+import co.unicauca.piedrazul.domain.entities.enums.AppointmentState;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -16,7 +17,7 @@ public class Appointment {
     private LocalDate date;
     private LocalTime startTime;
     private LocalTime endTime;
-    private String status; // AGENDADA, CANCELADA, ATENDIDA
+    private AppointmentState status; // AGENDADA, CANCELADA, ATENDIDA
     private Doctor doctor;
     private Patient patient;
 
@@ -56,11 +57,11 @@ public class Appointment {
         this.endTime = endTime;
     }
 
-    public String getStatus() {
+    public AppointmentState getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(AppointmentState status) {
         this.status = status;
     }
 

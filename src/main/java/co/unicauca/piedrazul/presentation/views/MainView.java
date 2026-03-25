@@ -2,6 +2,9 @@ package co.unicauca.piedrazul.presentation.views;
 
 import co.unicauca.piedrazul.domain.entities.User;
 import co.unicauca.piedrazul.domain.services.*;
+import co.unicauca.piedrazul.domain.services.validators.DoctorValidator;
+import co.unicauca.piedrazul.domain.services.validators.ManualAppointmentValidator;
+import co.unicauca.piedrazul.domain.services.validators.UserValidator;
 import co.unicauca.piedrazul.infrastructure.repositories.*;
 import co.unicauca.piedrazul.presentation.controllers.RegisterAppointmentController;
 import javafx.geometry.Insets;
@@ -55,6 +58,9 @@ public class MainView {
         // ── Repositorios (infraestructura) ────────────────────────────────────
         // Se instancian aquí: MainView conoce la infraestructura,
         // los servicios y controladores solo conocen interfaces (DIP)
+        UserValidator userValidator = new UserValidator();
+        DoctorValidator doctorValidator = new DoctorValidator(userValidator);
+        ManualAppointmentValidator manualAppointmentValidator = new ManualAppointmentValidator();
         PostgresUserRepository userRepo = new PostgresUserRepository();
         PostgresDoctorRepository doctorRepo = new PostgresDoctorRepository();
         PostgresPatientRepository patientRepo = new PostgresPatientRepository();
@@ -67,8 +73,8 @@ public class MainView {
         // Cada servicio recibe solo las dependencias que necesita
         this.scheduleService = new DoctorScheduleService(scheduleRepo);
         this.availabilityService = new AvailabilityService(scheduleRepo, appointmentRepo);
-        this.appointmentService = new AppointmentService(appointmentRepo, doctorRepo, patientRepo);
-        this.doctorService = new DoctorService(doctorRepo, scheduleRepo, specialtyRepo);
+        this.appointmentService = new AppointmentService(appointmentRepo, doctorRepo, patientRepo, manualAppointmentValidator);
+        this.doctorService = new DoctorService(doctorRepo, doctorValidator);
         this.patientService = new PatientService(patientRepo);
         this.parameterService = new SystemParameterService(paramRepo);
     }

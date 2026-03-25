@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import co.unicauca.piedrazul.domain.access.IPatientRepository;
+import co.unicauca.piedrazul.domain.entities.enums.UserState;
 
 /**
  * @author Valentina Añasco
@@ -45,7 +46,7 @@ public class PostgresPatientRepository implements IPatientRepository {
                     pstmt.setString(5, patient.getMiddleName());
                     pstmt.setString(6, patient.getFirstSurname());
                     pstmt.setString(7, patient.getLastName());
-                    pstmt.setString(8, "ACTIVO");
+                    pstmt.setString(8, UserState.ACTIVO.name());
                     pstmt.setString(9, patient.getUserTypeId());
                     pstmt.executeUpdate();
                 }
@@ -156,7 +157,7 @@ public class PostgresPatientRepository implements IPatientRepository {
         patient.setMiddleName(rs.getString("user_middle_name"));
         patient.setFirstSurname(rs.getString("user_first_surname"));
         patient.setLastName(rs.getString("user_last_name"));
-        patient.setState(rs.getString("user_state"));
+        patient.setState(UserState.valueOf(rs.getString("user_state")));
         patient.setUserTypeId(rs.getString("user_type_id"));
         patient.setPhone(rs.getString("pat_phone"));
         patient.setGender(rs.getString("pat_gender"));

@@ -1,5 +1,6 @@
 package co.unicauca.piedrazul.domain.entities;
 
+import co.unicauca.piedrazul.domain.entities.enums.UserState;
 import java.util.List;
 
 public class User {
@@ -12,7 +13,7 @@ public class User {
     private String lastName;
     private String username;
     private String password;
-    private String state;           // ACTIVO, INACTIVO
+    private UserState state;           // ACTIVO, INACTIVO
     private List<Role> roles;
 
     public List<Role> getRole() {
@@ -31,7 +32,7 @@ public class User {
     public User(int id, String userTypeId, String firstName, String middleName,
             String firstSurname, String lastName,
             String username, String password,
-            String state, List<Role> roles) {
+            UserState state, List<Role> roles) {
 
         this.id = id;
         this.userTypeId = userTypeId;
@@ -119,11 +120,11 @@ public class User {
         this.password = password;
     }
 
-    public String getState() {
+    public UserState getState() {
         return state;
     }
 
-    public void setState(String state) {
+    public void setState(UserState state) {
         this.state = state;
     }
 

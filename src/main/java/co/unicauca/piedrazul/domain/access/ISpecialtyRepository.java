@@ -12,8 +12,6 @@ import java.util.List;
  */
 public interface ISpecialtyRepository {
 
-    // Registra una especialidad nueva en el catálogo
-    boolean save(Specialty specialty);
 
     // Busca por id para validaciones
     Specialty findById(int id);
@@ -28,6 +26,6 @@ public interface ISpecialtyRepository {
     boolean assignSpecialtyToDoctor(int doctorId, int specialtyId);
 
     // Devuelve las especialidades que tiene un médico concreto
-    List<Specialty> findByDoctorId(int doctorId);
+    List<Specialty> findSpecialtiesByDoctorId(int doctorId);
 
 }

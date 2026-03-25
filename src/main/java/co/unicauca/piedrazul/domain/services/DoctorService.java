@@ -1,9 +1,8 @@
 package co.unicauca.piedrazul.domain.services;
 
 import co.unicauca.piedrazul.domain.access.IDoctorRepository;
-import co.unicauca.piedrazul.domain.access.IDoctorScheduleRepository;
-import co.unicauca.piedrazul.domain.access.ISpecialtyRepository;
 import co.unicauca.piedrazul.domain.entities.Doctor;
+import co.unicauca.piedrazul.domain.services.validators.DoctorValidator;
 import java.util.List;
 
 /**
@@ -17,27 +16,15 @@ import java.util.List;
 public class DoctorService {
     
     private final IDoctorRepository doctorRepository;
+    private final DoctorValidator doctorValidator;
 
-    private final IDoctorScheduleRepository doctorSheduleRepository;
-    private final ISpecialtyRepository specialtyRepository;
-
-    public DoctorService(IDoctorRepository doctorRepository,  IDoctorScheduleRepository doctorSheduleRepository
-                        , ISpecialtyRepository specialtyRepository) {
+    public DoctorService(IDoctorRepository doctorRepository, DoctorValidator doctorValidator) {
         this.doctorRepository = doctorRepository;
-        this.doctorSheduleRepository = doctorSheduleRepository;
-        this.specialtyRepository = specialtyRepository;
-
+        this.doctorValidator = doctorValidator;
     }
 
     public boolean registerDoctor(Doctor doctor) {
-        // Valida campos obligatorios del médico
-        if (doctor.getFirstName() == null || doctor.getFirstName().trim().isEmpty())
-            throw new IllegalArgumentException("El nombre del médico es obligatorio");
-        if (doctor.getProfessionalId() == null || doctor.getProfessionalId().trim().isEmpty())
-            throw new IllegalArgumentException("El id profesional es obligatorio");
-        if (doctor.getUsername() == null || doctor.getUsername().trim().isEmpty())
-            throw new IllegalArgumentException("El username es obligatorio");
-
+        doctorValidator.validate(doctor);
         return doctorRepository.save(doctor);
     }
 
@@ -46,9 +33,6 @@ public class DoctorService {
         if (doctor == null){
             throw new IllegalArgumentException("Médico no encontrado");
         }
-        doctor.setSchedules(doctorSheduleRepository.findByDoctorId(doctor.getId()));
-        doctor.setSpecialties(specialtyRepository.findByDoctorId(doctor.getId()));
-
         return doctor;
     }
 
@@ -58,11 +42,7 @@ public class DoctorService {
         if(doctors.isEmpty()){
             throw new IllegalArgumentException("No hay registros de medicos");
         }
-        for (Doctor doctor : doctors){
-            doctor.setSchedules(doctorSheduleRepository.findByDoctorId(doctor.getId()));
-            doctor.setSpecialties(specialtyRepository.findByDoctorId(doctor.getId()));
-            
-        }
+        
         return doctors;
     }
 
@@ -76,6 +56,6 @@ public class DoctorService {
         // Desactiva en lugar de eliminar para conservar historial de citas
         if (doctorRepository.findById(id) == null)
             throw new IllegalArgumentException("Médico no encontrado");
-        return doctorRepository.desactivate(id);
+        return doctorRepository.deactivate(id);
     }
 }

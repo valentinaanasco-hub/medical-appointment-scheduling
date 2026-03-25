@@ -20,18 +20,6 @@ import java.util.List;
 public class PostgresSpecialtyRepository implements ISpecialtyRepository {
 
     @Override
-    public boolean save(Specialty specialty) {
-        String sql = "INSERT INTO specialties (spec_name) VALUES (?)";
-        try (Connection conn = PostgreSQLConnection.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, specialty.getSpecialtyName());
-            return pstmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Error al guardar especialidad: " + e.getMessage());
-            return false;
-        }
-    }
-
-    @Override
     public Specialty findById(int id) {
         String sql = "SELECT * FROM specialties WHERE spec_id = ?";
         try (Connection conn = PostgreSQLConnection.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -95,7 +83,7 @@ public class PostgresSpecialtyRepository implements ISpecialtyRepository {
     }
 
     @Override
-    public List<Specialty> findByDoctorId(int doctorId) {
+    public List<Specialty> findSpecialtiesByDoctorId(int doctorId) {
         List<Specialty> list = new ArrayList<>();
         String sql = """
             SELECT s.spec_id, s.spec_name

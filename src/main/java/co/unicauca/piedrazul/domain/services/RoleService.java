@@ -2,6 +2,7 @@ package co.unicauca.piedrazul.domain.services;
 
 import co.unicauca.piedrazul.domain.access.IRoleRepository;
 import co.unicauca.piedrazul.domain.entities.Role;
+import co.unicauca.piedrazul.domain.entities.enums.RoleName;
 import java.util.List;
 
 /**
@@ -20,9 +21,9 @@ public class RoleService {
     }
 
 
-    public boolean assignRole(int userId, String roleName) {
+    public boolean assignRole(int userId, RoleName name) {
         // Verifica que el rol exista antes de asignarlo
-        Role role = roleRepository.findByName(roleName);
+        Role role = roleRepository.findByName(name);
         if (role == null)
             throw new IllegalArgumentException("Rol no encontrado");
         return roleRepository.assignRoleToUser(userId,role.getRoleId());

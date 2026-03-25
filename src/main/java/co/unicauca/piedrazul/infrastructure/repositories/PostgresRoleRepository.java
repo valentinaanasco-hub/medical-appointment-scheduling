@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import co.unicauca.piedrazul.domain.access.IRoleRepository;
+import co.unicauca.piedrazul.domain.entities.enums.RoleName;
 
 /**
  * @author Valentina Añasco
@@ -20,11 +21,11 @@ import co.unicauca.piedrazul.domain.access.IRoleRepository;
 public class PostgresRoleRepository implements IRoleRepository {
 
     @Override
-    public Role findByName(String name) {
+    public Role findByName(RoleName name) {
         // Útil para validar si un rol existe antes de asignarlo
         String sql = "SELECT * FROM roles WHERE role_name = ?";
         try (Connection conn = PostgreSQLConnection.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, name);
+            pstmt.setString(1, name.name());
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return mapResultSetToRole(rs);

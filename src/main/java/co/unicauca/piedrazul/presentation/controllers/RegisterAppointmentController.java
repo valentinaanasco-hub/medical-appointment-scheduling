@@ -1,5 +1,6 @@
 package co.unicauca.piedrazul.presentation.controllers;
 
+import co.unicauca.piedrazul.domain.entities.enums.AppointmentState;
 import co.unicauca.piedrazul.domain.entities.Appointment;
 import co.unicauca.piedrazul.domain.entities.Doctor;
 import co.unicauca.piedrazul.domain.entities.Patient;
@@ -148,7 +149,7 @@ public class RegisterAppointmentController {
         appointment.setDate(selectedDate);
         appointment.setStartTime(selectedSlot);
         appointment.setEndTime(endTime);
-        appointment.setStatus("AGENDADA");
+        appointment.setStatus(AppointmentState.AGENDADA);
 
         return appointmentService.scheduleAppointment(appointment);
     }
