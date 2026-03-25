@@ -13,6 +13,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import co.unicauca.piedrazul.domain.access.IAppointmentRepository;
+import co.unicauca.piedrazul.domain.entities.enums.AppointmentState;
 
 /**
  * @author Valentina Añasco
@@ -35,7 +36,7 @@ public class PostgresAppointmentRepository implements IAppointmentRepository {
             pstmt.setString(3, appointment.getDate().toString());
             pstmt.setString(4, appointment.getStartTime().toString());
             pstmt.setString(5, appointment.getEndTime().toString());
-            pstmt.setString(6, appointment.getStatus());
+            pstmt.setString(6, appointment.getStatus().name());
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error al guardar cita: " + e.getMessage());
@@ -130,7 +131,7 @@ public class PostgresAppointmentRepository implements IAppointmentRepository {
             pstmt.setString(1, appointment.getDate().toString());
             pstmt.setString(2, appointment.getStartTime().toString());
             pstmt.setString(3, appointment.getEndTime().toString());
-            pstmt.setString(4, appointment.getStatus());
+            pstmt.setString(4, appointment.getStatus().name());
             pstmt.setInt(5, appointment.getAppointmentId());
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -159,7 +160,7 @@ public class PostgresAppointmentRepository implements IAppointmentRepository {
         appointment.setDate(LocalDate.parse(rs.getString("appt_date")));
         appointment.setStartTime(LocalTime.parse(rs.getString("appt_start_time")));
         appointment.setEndTime(LocalTime.parse(rs.getString("appt_end_time")));
-        appointment.setStatus(rs.getString("appt_status"));
+        appointment.setStatus(AppointmentState.valueOf(rs.getString("appt_status")));
 
         // Solo asigna los ids para no hacer JOIN complejo aquí
         Doctor doctor = new Doctor();

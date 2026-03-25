@@ -1,6 +1,7 @@
 package co.unicauca.piedrazul.domain.access;
 
 import co.unicauca.piedrazul.domain.entities.Role;
+import co.unicauca.piedrazul.domain.entities.enums.RoleName;
 import java.util.List;
 
 /**
@@ -13,7 +14,7 @@ public interface IRoleRepository {
     boolean assignRoleToUser(int userId, int roleId);
 
     //Encontrar un rol por su nombre
-    Role findByName(String name);
+    Role findByName(RoleName name);
 
     // Para obtener todos los roles de un usuario específico
     List<Role> findRolesByUserId(int userId);

@@ -6,6 +6,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import co.unicauca.piedrazul.domain.access.IDoctorRepository;
+import co.unicauca.piedrazul.domain.entities.enums.UserState;
 
 /**
  * @author Valentina Añasco
@@ -42,7 +43,7 @@ public class PostgresDoctorRepository implements IDoctorRepository {
                     stmtU.setString(5, doctor.getMiddleName());
                     stmtU.setString(6, doctor.getFirstSurname());
                     stmtU.setString(7, doctor.getLastName());
-                    stmtU.setString(8, "ACTIVO");
+                    stmtU.setString(8, UserState.ACTIVO.name());
                     stmtU.executeUpdate();
                 }
 
@@ -114,7 +115,7 @@ public class PostgresDoctorRepository implements IDoctorRepository {
             pstmt.setString(2, doctor.getMiddleName());
             pstmt.setString(3, doctor.getFirstSurname());
             pstmt.setString(4, doctor.getLastName());
-            pstmt.setString(5, doctor.getState());
+            pstmt.setString(5, doctor.getState().name());
             pstmt.setInt(6, doctor.getId());
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -124,7 +125,7 @@ public class PostgresDoctorRepository implements IDoctorRepository {
     }
 
     @Override
-    public boolean desactivate(int id) {
+    public boolean deactivate(int id) {
         String sql = "UPDATE users SET user_state = 'INACTIVO' WHERE user_id = ?";
         try (Connection conn = PostgreSQLConnection.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, id);
@@ -145,7 +146,7 @@ public class PostgresDoctorRepository implements IDoctorRepository {
         doctor.setMiddleName(rs.getString("user_middle_name"));
         doctor.setFirstSurname(rs.getString("user_first_surname"));
         doctor.setLastName(rs.getString("user_last_name"));
-        doctor.setState(rs.getString("user_state"));
+        doctor.setState(UserState.valueOf(rs.getString("user_state")));
         doctor.setProfessionalId(rs.getString("doct_professional_id"));
         return doctor;
     }

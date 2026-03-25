@@ -25,6 +25,6 @@ public interface IDoctorRepository {
     boolean update(Doctor doctor);
 
     // Cambia el estado a INACTIVO en la tabla users
-    boolean desactivate(int id);
+    boolean deactivate(int id);
 
 }

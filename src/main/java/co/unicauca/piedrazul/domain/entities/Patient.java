@@ -1,5 +1,6 @@
 package co.unicauca.piedrazul.domain.entities;
 
+import co.unicauca.piedrazul.domain.entities.enums.UserState;
 import java.util.List;
 
 /**
@@ -26,7 +27,7 @@ public class Patient extends User {
     public Patient(String phone, String gender, String birthDay,
             String birthMonth, String birthYear, String email, int id,
             String userTypeId, String firstName, String middleName, String firstSurname,
-            String lastName, String username, String password, String state, List<Role> roles) {
+            String lastName, String username, String password, UserState state, List<Role> roles) {
         super(id, userTypeId, firstName, middleName, firstSurname, lastName, username, password, state, roles);
         this.phone = phone;
         this.gender = gender;
