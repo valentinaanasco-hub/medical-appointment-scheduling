@@ -25,5 +25,5 @@ public interface IUserRepository {
     boolean update(User user);
 
     // Para desactivar un paciente sin eliminar su historial
-    boolean desactivate(int userId);
+    boolean deactivate(int userId);
 }
