@@ -1,12 +1,8 @@
 package co.unicauca.piedrazul.presentation.views;
 
+import co.unicauca.piedrazul.application.PiedrazulFacade;
 import co.unicauca.piedrazul.domain.entities.User;
-import co.unicauca.piedrazul.domain.services.*;
-import co.unicauca.piedrazul.domain.services.validators.DoctorValidator;
-import co.unicauca.piedrazul.domain.services.validators.ManualAppointmentValidator;
-import co.unicauca.piedrazul.domain.services.validators.UserValidator;
-import co.unicauca.piedrazul.infrastructure.repositories.*;
-import co.unicauca.piedrazul.presentation.controllers.RegisterAppointmentController;
+import co.unicauca.piedrazul.main.DataBaseType;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -17,55 +13,31 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 /**
- * Gestión de la interfaz principal y navegación.
- * * Se encarga de centralizar la instancia de servicios y repositorios 
- * para asegurar que los controladores reciban las dependencias necesarias.
+ * @author Valentina Añasco
+ * @author Camila Dorado
+ * @author Felipe Gutierrez
+ * @author Ginner Ortega
+ * @author Santiago Solarte
+ *
+ * Vista principal con navegación lateral. Centraliza la creación de vistas y
+ * obtiene controladores desde la fachada.
  */
 public class MainView {
 
     private final Stage stage;
     private final User loggedUser;
     private final String loggedUserRole;
+    private final PiedrazulFacade facade;
 
     private BorderPane mainLayout;
     private Button activeNavButton;
 
-    // Servicios del sistema
-    private ManualAppointmentService appointmentService;
-    private DoctorService doctorService;
-    private DoctorScheduleService doctorScheduleService;
-    private AvailabilityService availabilityService;
-    private PatientService patientService;
-    private SystemParameterService parameterService;
-
-    public MainView(Stage stage, User loggedUser, String loggedUserRole) {
+    public MainView(Stage stage, User loggedUser, String loggedUserRole, DataBaseType dbType) {
         this.stage = stage;
         this.loggedUser = loggedUser;
         this.loggedUserRole = loggedUserRole;
-        
-        /*
-        // Inicialización de validadores
-        UserValidator userValidator = new UserValidator();
-        DoctorValidator doctorValidator = new DoctorValidator();
-        ManualAppointmentValidator manualAppointmentValidator = new ManualAppointmentValidator();
-
-        // Inicialización de infraestructura (repositorios)
-        PostgresUserRepository userRepo = new PostgresUserRepository();
-        PostgresDoctorRepository doctorRepo = new PostgresDoctorRepository();
-        PostgresPatientRepository patientRepo = new PostgresPatientRepository();
-        PostgresAppointmentRepository appointmentRepo = new PostgresAppointmentRepository();
-        PostgresDoctorScheduleRepository scheduleRepo = new PostgresDoctorScheduleRepository();
-        PostgresSystemParameterRepository paramRepo = new PostgresSystemParameterRepository();
-        PostgresSpecialtyRepository specialtyRepo = new PostgresSpecialtyRepository();
-
-        // Ensamblaje de servicios
-        this.doctorScheduleService = new DoctorScheduleService(scheduleRepo);
-        this.availabilityService = new AvailabilityService(scheduleRepo, appointmentRepo);
-        this.appointmentService = new ManualAppointmentService(appointmentRepo, doctorRepo, patientRepo, manualAppointmentValidator);
-        this.doctorService = new DoctorService(doctorRepo, doctorValidator);
-        this.patientService = new PatientService(patientRepo);
-        this.parameterService = new SystemParameterService(paramRepo);
-        */
+        // Obtiene la instancia única de la fachada
+        this.facade = PiedrazulFacade.getInstance(dbType);
     }
 
     public void show() {
@@ -73,7 +45,7 @@ public class MainView {
         mainLayout.setStyle("-fx-background-color: #F3F4F6;");
         mainLayout.setLeft(buildSidebar());
 
-        // Carga de la vista por defecto
+        // Vista por defecto al abrir
         showListView();
 
         Scene scene = new Scene(mainLayout, 1100, 700);
@@ -84,7 +56,7 @@ public class MainView {
         stage.show();
     }
 
-    // Estructura del menú lateral
+    // ── Sidebar ───────────────────────────────────────────────────────────────
     private VBox buildSidebar() {
         VBox sidebar = new VBox();
         sidebar.setPrefWidth(245);
@@ -94,30 +66,25 @@ public class MainView {
 
         sidebar.getChildren().add(buildLogo());
 
+        // Etiqueta de sección
         Label sectionLbl = new Label("Administración");
         sectionLbl.setPadding(new Insets(18, 16, 6, 18));
-        sectionLbl.setStyle(
-                "-fx-text-fill: #9CA3AF; -fx-font-size: 10px; -fx-font-weight: bold;");
+        sectionLbl.setStyle("-fx-text-fill: #9CA3AF; -fx-font-size: 10px; -fx-font-weight: bold;");
         sidebar.getChildren().add(sectionLbl);
 
-        // Opciones de navegación
-        Button btnPanel = navButton("⊞", "Panel de Citas", this::showPanelView);
-        Button btnList = navButton("☰", "Listar Citas", this::showListView);
-        Button btnRegister = navButton("⊕", "Registrar Cita", this::showRegisterView);
-        Button btnReschedule = navButton("↺", "Reagendar Cita", this::showRescheduleView);
-        Button btnExport = navButton("⬇", "Exportar Citas", this::showExportView);
-        Button btnConfig = navButton("⚙", "Configuración", this::showConfigView);
-
+        // Botones de navegación
         sidebar.getChildren().addAll(
-                btnPanel, btnList, btnRegister,
-                btnReschedule, btnExport, btnConfig
+                navButton("⊞", "Panel de Citas", this::showPanelView),
+                navButton("☰", "Listar Citas", this::showListView),
+                navButton("⊕", "Registrar Cita", this::showRegisterView),
+                navButton("↺", "Reagendar Cita", this::showRescheduleView),
+                navButton("⬇", "Exportar Citas", this::showExportView),
+                navButton("⚙", "Configuración", this::showConfigView)
         );
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
-        sidebar.getChildren().add(spacer);
-
-        sidebar.getChildren().add(buildUserFooter());
+        sidebar.getChildren().addAll(spacer, buildUserFooter());
         return sidebar;
     }
 
@@ -144,7 +111,6 @@ public class MainView {
         return box;
     }
 
-    // Configuración de eventos y estilos para botones del menú
     private Button navButton(String icon, String label, Runnable action) {
         Button btn = new Button(icon + "  " + label);
         btn.setMaxWidth(Double.MAX_VALUE);
@@ -163,7 +129,6 @@ public class MainView {
                 btn.setStyle(navStyle(false));
             }
         });
-
         btn.setOnAction(e -> {
             if (activeNavButton != null) {
                 activeNavButton.setStyle(navStyle(false));
@@ -172,7 +137,6 @@ public class MainView {
             btn.setStyle(navStyle(true));
             action.run();
         });
-
         return btn;
     }
 
@@ -182,13 +146,11 @@ public class MainView {
                     + "-fx-font-weight: bold; -fx-border-color: #2563EB transparent transparent transparent;"
                     + "-fx-border-width: 0 0 0 3; -fx-background-radius: 0;";
         }
-        return "-fx-background-color: transparent; -fx-text-fill: #374151;"
-                + "-fx-background-radius: 0;";
+        return "-fx-background-color: transparent; -fx-text-fill: #374151; -fx-background-radius: 0;";
     }
 
     private String navHoverStyle() {
-        return "-fx-background-color: #F9FAFB; -fx-text-fill: #111827;"
-                + "-fx-background-radius: 0;";
+        return "-fx-background-color: #F9FAFB; -fx-text-fill: #111827; -fx-background-radius: 0;";
     }
 
     private HBox buildUserFooter() {
@@ -197,9 +159,8 @@ public class MainView {
         footer.setAlignment(Pos.CENTER_LEFT);
         footer.setStyle("-fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;");
 
-        // Generar inicial para el avatar
-        String initial = (loggedUser.getFirstName() != null
-                && !loggedUser.getFirstName().isEmpty())
+        // Inicial del nombre para el avatar
+        String initial = (loggedUser.getFirstName() != null && !loggedUser.getFirstName().isEmpty())
                 ? String.valueOf(loggedUser.getFirstName().charAt(0)).toUpperCase()
                 : "U";
 
@@ -227,25 +188,29 @@ public class MainView {
         return footer;
     }
 
-    // Controladores de intercambio de paneles centrales
-    private void showRegisterView() {
-        RegisterAppointmentController controller = new RegisterAppointmentController(
-                appointmentService,
-                doctorService,
-                availabilityService,
-                patientService,
-                parameterService
+    // ── Navegación ────────────────────────────────────────────────────────────
+    // Muestra el listado de citas — usa ManualAppointmentController y DoctorController de la fachada
+    private void showListView() {
+        ListAppointmentsView view = new ListAppointmentsView(
+                facade.getManualAppointmentController(),
+                facade.getDoctorController(),
+                loggedUserRole
         );
-
-        RegisterAppointmentView view
-                = new RegisterAppointmentView(controller, loggedUserRole);
-
         mainLayout.setCenter(view.getRoot());
     }
 
-    private void showListView() {
-        mainLayout.setCenter(placeholder("📋", "Listar Citas",
-                "Módulo en desarrollo - Requerimiento 1"));
+    // Muestra el formulario de registro — usa RegisterAppointmentController de la fachada
+    private void showRegisterView() {
+        try {
+            RegisterAppointmentView view = new RegisterAppointmentView(
+                    facade.getRegisterAppointmentController(),
+                    loggedUserRole
+            );
+            mainLayout.setCenter(view.getRoot());
+        } catch (Exception ex) {
+            ex.printStackTrace(); // <-- Mira la consola
+            mainLayout.setCenter(placeholder("⚠", "Error", ex.getClass().getSimpleName() + ": " + ex.getMessage()));
+        }
     }
 
     private void showPanelView() {
@@ -264,6 +229,7 @@ public class MainView {
         mainLayout.setCenter(placeholder("⚙", "Configuración", "Próximamente"));
     }
 
+    // Pantalla de relleno para vistas en desarrollo
     private VBox placeholder(String icon, String title, String subtitle) {
         VBox box = new VBox(10);
         box.setAlignment(Pos.CENTER);
