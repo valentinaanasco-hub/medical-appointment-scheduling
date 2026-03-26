@@ -532,6 +532,7 @@ public class RegisterAppointmentView {
 
     /**
      * Retorna el panel raíz para montarlo en la ventana principal
+     * @return 
      */
     public BorderPane getRoot() {
         return root;

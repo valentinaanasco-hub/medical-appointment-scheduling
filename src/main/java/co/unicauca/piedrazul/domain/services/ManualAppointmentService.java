@@ -6,20 +6,20 @@ import co.unicauca.piedrazul.domain.entities.Appointment;
 import co.unicauca.piedrazul.domain.entities.Doctor;
 import co.unicauca.piedrazul.domain.entities.Patient;
 import co.unicauca.piedrazul.domain.entities.enums.AppointmentState;
-import co.unicauca.piedrazul.domain.services.validators.IAppointmentValidator;
 import java.util.List;
+import co.unicauca.piedrazul.domain.services.interfaces.IManualAppointmentValidator;
 
-public class AppointmentService {
+public class ManualAppointmentService {
 
     private final IAppointmentRepository appointmentRepository;
     private final IDoctorRepository doctorRepository;
     private final IPatientRepository patientRepository;
-    private final IAppointmentValidator validator; 
+    private final IManualAppointmentValidator validator; 
 
-    public AppointmentService(IAppointmentRepository appointmentRepository,
+    public ManualAppointmentService(IAppointmentRepository appointmentRepository,
                                IDoctorRepository doctorRepository,
                                IPatientRepository patientRepository,
-                               IAppointmentValidator validator) { 
+                               IManualAppointmentValidator validator) { 
         this.appointmentRepository = appointmentRepository;
         this.doctorRepository = doctorRepository;
         this.patientRepository = patientRepository;

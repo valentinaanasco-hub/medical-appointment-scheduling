@@ -43,7 +43,7 @@ public class MainView {
 
     // ── Servicios compartidos (instanciados una sola vez) ─────────────────────
     // Se crean aquí porque MainView es el punto de ensamblaje de la app
-    private final AppointmentService appointmentService;
+    private final ManualAppointmentService appointmentService;
     private final DoctorService doctorService;
     private final DoctorScheduleService scheduleService;
     private final AvailabilityService availabilityService;
@@ -73,7 +73,7 @@ public class MainView {
         // Cada servicio recibe solo las dependencias que necesita
         this.scheduleService = new DoctorScheduleService(scheduleRepo);
         this.availabilityService = new AvailabilityService(scheduleRepo, appointmentRepo);
-        this.appointmentService = new AppointmentService(appointmentRepo, doctorRepo, patientRepo, manualAppointmentValidator);
+        this.appointmentService = new ManualAppointmentService(appointmentRepo, doctorRepo, patientRepo, manualAppointmentValidator);
         this.doctorService = new DoctorService(doctorRepo, doctorValidator);
         this.patientService = new PatientService(patientRepo);
         this.parameterService = new SystemParameterService(paramRepo);
