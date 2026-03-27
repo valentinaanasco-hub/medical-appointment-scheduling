@@ -3,6 +3,8 @@ package co.unicauca.piedrazul.presentation.views;
 import co.unicauca.piedrazul.application.PiedrazulFacade;
 import co.unicauca.piedrazul.domain.entities.User;
 import co.unicauca.piedrazul.main.DataBaseType;
+import co.unicauca.piedrazul.presentation.controllers.RegisterAppointmentController;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,10 +15,20 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 /**
- * Vista principal con sidebar de navegación.
- * Integra ListAppointmentsView y RegisterAppointmentView.
+ * @author Valentina Añasco
+ * @author Camila Dorado
+ * @author Felipe Gutierrez
+ * @author Ginner Ortega
+ * @author Santiago Solarte
+ *
+ * Vista principal con navegación lateral. Centraliza la creación de vistas y
+ * obtiene controladores desde la fachada.
  */
 public class MainView {
+
+    // Vistas cache solucion temporal
+    private ListAppointmentsView cachedListView;
+    private RegisterAppointmentView cachedRegisterView;
 
     private final Stage stage;
     private final User loggedUser;
@@ -27,10 +39,11 @@ public class MainView {
     private Button activeNavButton;
 
     public MainView(Stage stage, User loggedUser, String loggedUserRole, DataBaseType dbType) {
-        this.stage          = stage;
-        this.loggedUser     = loggedUser;
+        this.stage = stage;
+        this.loggedUser = loggedUser;
         this.loggedUserRole = loggedUserRole;
-        this.facade         = PiedrazulFacade.getInstance(dbType);
+        // Obtiene la instancia única de la fachada
+        this.facade = PiedrazulFacade.getInstance(dbType);
     }
 
     public void show() {
@@ -38,38 +51,44 @@ public class MainView {
         mainLayout.setStyle("-fx-background-color: #F3F4F6;");
         mainLayout.setLeft(buildSidebar());
 
-        // Vista por defecto al abrir la aplicación
+        // Vista por defecto al abrir
         showListView();
 
-        Scene scene = new Scene(mainLayout, 1150, 720);
+        Scene scene = new Scene(mainLayout, 1100, 700);
         stage.setTitle("Piedrazul — Citas Médicas");
+        stage.setMinWidth(900);
+        stage.setMinHeight(600);
         stage.setScene(scene);
+        stage.sizeToScene();
+        stage.centerOnScreen();
+        stage.show();
         stage.show();
     }
 
     // ── Sidebar ───────────────────────────────────────────────────────────────
-
     private VBox buildSidebar() {
         VBox sidebar = new VBox();
-        sidebar.setPrefWidth(250);
-        sidebar.setStyle("-fx-background-color: white;"
+        sidebar.setPrefWidth(245);
+        sidebar.setStyle(
+                "-fx-background-color: white;"
                 + "-fx-border-color: #E5E7EB; -fx-border-width: 0 1 0 0;");
 
         sidebar.getChildren().add(buildLogo());
 
-        // Separador de sección
-        Label sectionLabel = new Label("Administración");
-        sectionLabel.setStyle("-fx-text-fill: #9CA3AF; -fx-font-size: 11px; -fx-font-weight: bold;");
-        sectionLabel.setPadding(new Insets(14, 0, 4, 20));
-        sidebar.getChildren().add(sectionLabel);
+        // Etiqueta de sección
+        Label sectionLbl = new Label("Administración");
+        sectionLbl.setPadding(new Insets(18, 16, 6, 18));
+        sectionLbl.setStyle("-fx-text-fill: #9CA3AF; -fx-font-size: 10px; -fx-font-weight: bold;");
+        sidebar.getChildren().add(sectionLbl);
 
+        // Botones de navegación
         sidebar.getChildren().addAll(
-                navButton("⊞", "Panel de Citas",   this::showPanelView),
-                navButton("☰", "Listar Citas",      this::showListView),
-                navButton("⊕", "Registrar Cita",    this::showRegisterView),
-                navButton("↺", "Reagendar Cita",    this::showRescheduleView),
-                navButton("⬇", "Exportar Citas",    this::showExportView),
-                navButton("⚙", "Configuración",     this::showConfigView)
+                navButton("⊞", "Panel de Citas", this::showPanelView),
+                navButton("☰", "Listar Citas", this::showListView),
+                navButton("⊕", "Registrar Cita", this::showRegisterView),
+                navButton("↺", "Reagendar Cita", this::showRescheduleView),
+                navButton("⬇", "Exportar Citas", this::showExportView),
+                navButton("⚙", "Configuración", this::showConfigView)
         );
 
         Region spacer = new Region();
@@ -80,53 +99,67 @@ public class MainView {
 
     private HBox buildLogo() {
         HBox box = new HBox(12);
-        box.setPadding(new Insets(22, 16, 18, 18));
+        box.setPadding(new Insets(20, 16, 18, 18));
         box.setAlignment(Pos.CENTER_LEFT);
         box.setStyle("-fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0;");
 
-        // Icono cuadrado azul con símbolo de corazón
-        Label icon = new Label("♥");
-        icon.setFont(Font.font("System", FontWeight.BOLD, 18));
-        icon.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white;"
-                + "-fx-background-radius: 10; -fx-padding: 8 10;");
+        Label icon = new Label("💙");
+        icon.setStyle(
+                "-fx-font-size: 20px; -fx-background-color: #2563EB;"
+                + "-fx-background-radius: 8; -fx-padding: 7 9;");
 
-        VBox textBox = new VBox(1);
         Label appName = new Label("Piedrazul");
         appName.setFont(Font.font("System", FontWeight.BOLD, 15));
         appName.setStyle("-fx-text-fill: #111827;");
-        Label appSub = new Label("Citas Médicas");
-        appSub.setStyle("-fx-text-fill: #9CA3AF; -fx-font-size: 11px;");
-        textBox.getChildren().addAll(appName, appSub);
 
+        Label appSub = new Label("Citas Médicas");
+        appSub.setStyle("-fx-text-fill: #6B7280; -fx-font-size: 11px;");
+
+        VBox textBox = new VBox(1, appName, appSub);
         box.getChildren().addAll(icon, textBox);
         return box;
     }
 
     private Button navButton(String icon, String label, Runnable action) {
-        Button btn = new Button(icon + "   " + label);
+        Button btn = new Button(icon + "  " + label);
         btn.setMaxWidth(Double.MAX_VALUE);
         btn.setAlignment(Pos.CENTER_LEFT);
         btn.setPadding(new Insets(11, 16, 11, 20));
         btn.setFont(Font.font("System", 13));
-        btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #374151; -fx-cursor: hand;");
+        btn.setStyle(navStyle(false));
 
         btn.setOnMouseEntered(e -> {
-            if (btn != activeNavButton)
-                btn.setStyle("-fx-background-color: #F9FAFB; -fx-text-fill: #111827; -fx-cursor: hand;");
+            if (btn != activeNavButton) {
+                btn.setStyle(navHoverStyle());
+            }
         });
         btn.setOnMouseExited(e -> {
-            if (btn != activeNavButton)
-                btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #374151; -fx-cursor: hand;");
+            if (btn != activeNavButton) {
+                btn.setStyle(navStyle(false));
+            }
         });
-
         btn.setOnAction(e -> {
-            if (activeNavButton != null)
-                activeNavButton.setStyle("-fx-background-color: transparent; -fx-text-fill: #374151; -fx-cursor: hand;");
+            if (activeNavButton != null) {
+                activeNavButton.setStyle(navStyle(false));
+            }
             activeNavButton = btn;
-            btn.setStyle("-fx-background-color: #EFF6FF; -fx-text-fill: #2563EB; -fx-cursor: hand;");
+            btn.setStyle(navStyle(true));
             action.run();
         });
         return btn;
+    }
+
+    private String navStyle(boolean active) {
+        if (active) {
+            return "-fx-background-color: #EFF6FF; -fx-text-fill: #2563EB;"
+                    + "-fx-font-weight: bold; -fx-border-color: #2563EB transparent transparent transparent;"
+                    + "-fx-border-width: 0 0 0 3; -fx-background-radius: 0;";
+        }
+        return "-fx-background-color: transparent; -fx-text-fill: #374151; -fx-background-radius: 0;";
+    }
+
+    private String navHoverStyle() {
+        return "-fx-background-color: #F9FAFB; -fx-text-fill: #111827; -fx-background-radius: 0;";
     }
 
     private HBox buildUserFooter() {
@@ -135,93 +168,157 @@ public class MainView {
         footer.setAlignment(Pos.CENTER_LEFT);
         footer.setStyle("-fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;");
 
-        // Avatar con inicial del nombre
+        // Inicial del nombre para el avatar
         String initial = (loggedUser.getFirstName() != null && !loggedUser.getFirstName().isEmpty())
-                ? loggedUser.getFirstName().substring(0, 1).toUpperCase() : "U";
-        Label avatar = new Label(initial);
-        avatar.setFont(Font.font("System", FontWeight.BOLD, 14));
-        avatar.setStyle("-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;"
-                + "-fx-background-radius: 20; -fx-padding: 6 10;");
+                ? String.valueOf(loggedUser.getFirstName().charAt(0)).toUpperCase()
+                : "U";
 
-        VBox info = new VBox(1);
+        Label avatar = new Label(initial);
+        avatar.setStyle(
+                "-fx-background-color: #2563EB; -fx-text-fill: white;"
+                + "-fx-font-weight: bold; -fx-font-size: 13px;"
+                + "-fx-background-radius: 50; -fx-min-width: 34; -fx-min-height: 34;"
+                + "-fx-alignment: center;");
+
         Label nameLabel = new Label(loggedUser.getFullName());
-        nameLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
-        nameLabel.setStyle("-fx-text-fill: #111827;");
+        nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #111827;");
 
         Label roleLabel = new Label(loggedUserRole);
-        roleLabel.setStyle("-fx-text-fill: #7C3AED; -fx-font-size: 10px; -fx-font-weight: bold;");
+        roleLabel.setStyle("-fx-text-fill: #6B7280; -fx-font-size: 11px;");
 
-        info.getChildren().addAll(nameLabel, roleLabel);
+        VBox info = new VBox(2, nameLabel, roleLabel);
+        HBox.setHgrow(info, Priority.ALWAYS);
 
-        // Botón logout
-        Button btnLogout = new Button("→");
-        btnLogout.setStyle("-fx-background-color: transparent; -fx-text-fill: #9CA3AF;"
-                + "-fx-font-size: 16px; -fx-cursor: hand; -fx-border-color: transparent;");
-        btnLogout.setTooltip(new Tooltip("Cerrar sesión"));
+        Label logoutIcon = new Label("⇥");
+        logoutIcon.setStyle("-fx-text-fill: #9CA3AF; -fx-font-size: 16px; -fx-cursor: hand;");
+        Tooltip.install(logoutIcon, new Tooltip("Cerrar sesión"));
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        footer.getChildren().addAll(avatar, info, spacer, btnLogout);
+        footer.getChildren().addAll(avatar, info, logoutIcon);
         return footer;
     }
 
-    // ── Navegación a vistas ───────────────────────────────────────────────────
-
-    /** Listado de citas — solo ADMIN, DOCTOR, AGENDADOR */
+    // ── Navegación ────────────────────────────────────────────────────────────
+    // Muestra el listado de citas — usa ManualAppointmentController y DoctorController de la fachada
     private void showListView() {
-        ListAppointmentsView view = new ListAppointmentsView(
-                facade.getAppointmentController(),
-                facade.getDoctorController(),
-                loggedUserRole
+        // Si ya existe la vista, simplemente la ponemos en el centro y salimos
+        if (cachedListView != null) {
+            mainLayout.setCenter(cachedListView.getRoot());
+            return;
+        }
+        mainLayout.setCenter(buildLoadingPlaceholder());
+
+        Task<ListAppointmentsView> task = new Task<>() {
+            @Override
+            protected ListAppointmentsView call() {
+                return new ListAppointmentsView(
+                        facade.getManualAppointmentController(),
+                        facade.getDoctorController(),
+                        loggedUserRole
+                );
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            this.cachedListView = task.getValue();
+            mainLayout.setCenter(this.cachedListView.getRoot());
+        });
+
+        task.setOnFailed(e
+                -> mainLayout.setCenter(placeholder("⚠", "Error al cargar",
+                        task.getException().getMessage()))
         );
-        mainLayout.setCenter(view.getRoot());
+
+        new Thread(task).start(); // iniciamos tarea asincronica
     }
 
-    /** Registrar cita — solo ADMIN, DOCTOR, AGENDADOR */
+    // Muestra el formulario de registro — usa RegisterAppointmentController de la fachada
     private void showRegisterView() {
-        RegisterAppointmentView view = new RegisterAppointmentView(
-                facade.getAppointmentController(),
-                facade.getDoctorController(),
-                facade.getAvailabilityController(),
-                facade.getPatientController(),
-                facade.getParameterController(),
-                loggedUserRole
+        // Si ya existe la vista, simplemente la ponemos en el centro y salimos
+        if (cachedRegisterView != null) {
+            mainLayout.setCenter(cachedRegisterView.getRoot());
+            return;
+        }
+        mainLayout.setCenter(buildLoadingPlaceholder());
+
+        Task<RegisterAppointmentView> task = new Task<>() {
+            @Override
+            protected RegisterAppointmentView call() {
+                RegisterAppointmentController ctrl = facade.getRegisterAppointmentController();
+                ctrl.reset();
+                return new RegisterAppointmentView(ctrl, loggedUserRole);
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            this.cachedRegisterView = task.getValue();
+            mainLayout.setCenter(this.cachedRegisterView.getRoot());
+        });
+
+        task.setOnFailed(e
+                -> mainLayout.setCenter(placeholder("⚠", "Error al cargar",
+                        task.getException().getMessage()))
         );
-        mainLayout.setCenter(view.getRoot());
+
+        new Thread(task).start();
+
+        task.setOnFailed(e
+                -> mainLayout.setCenter(placeholder("⚠", "Error al cargar",
+                        task.getException().getMessage()))
+        );
+
+        new Thread(task).start();
     }
 
     private void showPanelView() {
-        mainLayout.setCenter(buildPlaceholder("Panel de Citas", "Próximamente: vista de panel"));
+        mainLayout.setCenter(placeholder("⊞", "Panel de Citas", "Próximamente"));
     }
 
     private void showRescheduleView() {
-        mainLayout.setCenter(buildPlaceholder("Reagendar Cita", "Próximamente: reagendamiento de citas"));
+        mainLayout.setCenter(placeholder("↺", "Reagendar Cita", "Próximamente"));
     }
 
     private void showExportView() {
-        mainLayout.setCenter(buildPlaceholder("Exportar Citas", "Próximamente: exportación a PDF/Excel"));
+        mainLayout.setCenter(placeholder("⬇", "Exportar Citas", "Próximamente"));
     }
 
     private void showConfigView() {
-        mainLayout.setCenter(buildPlaceholder("Configuración", "Próximamente: ajustes del sistema"));
+        mainLayout.setCenter(placeholder("⚙", "Configuración", "Próximamente"));
     }
 
-    // ── Placeholder para vistas en construcción ───────────────────────────────
-
-    private VBox buildPlaceholder(String title, String message) {
+    // Placeholder de carga mientras el Task trabaja en background
+    private VBox buildLoadingPlaceholder() {
         VBox box = new VBox(12);
         box.setAlignment(Pos.CENTER);
         box.setPadding(new Insets(60));
 
-        Label lblTitle = new Label(title);
-        lblTitle.setFont(Font.font("System", FontWeight.BOLD, 20));
-        lblTitle.setStyle("-fx-text-fill: #374151;");
+        ProgressIndicator spinner = new ProgressIndicator();
+        spinner.setPrefSize(48, 48);
 
-        Label lblMsg = new Label(message);
-        lblMsg.setStyle("-fx-text-fill: #9CA3AF; -fx-font-size: 13px;");
+        Label lbl = new Label("Cargando...");
+        lbl.setStyle("-fx-text-fill: #6B7280; -fx-font-size: 13px;");
 
-        box.getChildren().addAll(lblTitle, lblMsg);
+        box.getChildren().addAll(spinner, lbl);
+        return box;
+    }
+
+    // Pantalla de relleno para vistas en desarrollo
+    private VBox placeholder(String icon, String title, String subtitle) {
+        VBox box = new VBox(10);
+        box.setAlignment(Pos.CENTER);
+        box.setPadding(new Insets(60));
+
+        Label iconLbl = new Label(icon);
+        iconLbl.setFont(Font.font(42));
+
+        Label titleLbl = new Label(title);
+        titleLbl.setFont(Font.font("System", FontWeight.BOLD, 18));
+        titleLbl.setStyle("-fx-text-fill: #374151;");
+
+        Label subLbl = new Label(subtitle);
+        subLbl.setStyle("-fx-text-fill: #9CA3AF; -fx-font-size: 13px;");
+
+        box.getChildren().addAll(iconLbl, titleLbl, subLbl);
+        BorderPane.setAlignment(box, Pos.CENTER);
         return box;
     }
 }
