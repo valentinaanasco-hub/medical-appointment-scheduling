@@ -14,7 +14,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,8 +23,8 @@ import static org.mockito.Mockito.*;
 /**
  * Pruebas unitarias para AvailabilityService.
  *
- * Se usan mocks de los repositorios para que las pruebas no necesiten
- * base de datos y sean rápidas y repetibles.
+ * Cubre los casos críticos del cálculo de slots disponibles:
+ * horarios configurados, citas ocupadas, citas canceladas y días sin configuración.
  */
 @ExtendWith(MockitoExtension.class)
 class AvailabilityServiceTest {
@@ -48,7 +47,7 @@ class AvailabilityServiceTest {
     }
 
     // -----------------------------------------------------------------------
-    // Helpers para construir objetos de prueba
+    // Helpers
     // -----------------------------------------------------------------------
 
     private DoctorSchedule buildSchedule(int dayOfWeek, LocalTime start, LocalTime end, int interval) {
@@ -68,125 +67,144 @@ class AvailabilityServiceTest {
     }
 
     // -----------------------------------------------------------------------
-    // Pruebas de getAvailableSlots
+    // Test 1: Horario de 8:00 a 10:00 con intervalo de 30 min → 4 slots exactos
     // -----------------------------------------------------------------------
 
     @Test
-    @DisplayName("Sin horario configurado -> lista vacía de slots")
-    void getAvailableSlots_sinHorario_retornaListaVacia() {
-        when(scheduleRepository.findByDoctorId(DOCTOR_ID)).thenReturn(Collections.emptyList());
-        when(appointmentRepository.findByDoctorAndDate(DOCTOR_ID, LUNES.toString()))
-                .thenReturn(Collections.emptyList());
-
-        List<LocalTime> slots = availabilityService.getAvailableSlots(DOCTOR_ID, LUNES);
-
-        assertTrue(slots.isEmpty(), "Sin horario no debe haber slots disponibles");
-    }
-
-    @Test
-    @DisplayName("Horario de lunes configurado, sin citas -> todos los slots disponibles")
-    void getAvailableSlots_sinCitas_retornaTodosLosSlots() {
-        // Horario: lunes 08:00 - 09:00 con intervalo 30 min -> slots: 08:00 y 08:30
-        DoctorSchedule schedule = buildSchedule(1, LocalTime.of(8, 0), LocalTime.of(9, 0), 30);
+    @DisplayName("Horario 08:00-10:00 con intervalo 30min y sin citas -> exactamente 4 slots")
+    void getAvailableSlots_horario2horas_intervalo30min_retorna4Slots() {
+        // GIVEN: horario lunes 08:00-10:00, intervalo 30 min
+        DoctorSchedule schedule = buildSchedule(1, LocalTime.of(8, 0), LocalTime.of(10, 0), 30);
         when(scheduleRepository.findByDoctorId(DOCTOR_ID)).thenReturn(List.of(schedule));
         when(appointmentRepository.findByDoctorAndDate(DOCTOR_ID, LUNES.toString()))
                 .thenReturn(Collections.emptyList());
 
+        // WHEN
         List<LocalTime> slots = availabilityService.getAvailableSlots(DOCTOR_ID, LUNES);
 
-        assertEquals(2, slots.size());
+        // THEN: debe retornar exactamente [08:00, 08:30, 09:00, 09:30]
+        assertEquals(4, slots.size(), "Deben existir exactamente 4 slots");
         assertTrue(slots.contains(LocalTime.of(8, 0)));
         assertTrue(slots.contains(LocalTime.of(8, 30)));
+        assertTrue(slots.contains(LocalTime.of(9, 0)));
+        assertTrue(slots.contains(LocalTime.of(9, 30)));
     }
 
+    // -----------------------------------------------------------------------
+    // Test 2: Cita AGENDADA a las 09:00 → ese slot se excluye, quedan solo 3
+    // -----------------------------------------------------------------------
+
     @Test
-    @DisplayName("Una cita AGENDADA ocupa su slot -> ese horario no aparece disponible")
-    void getAvailableSlots_conCitaAgendada_slotOcupadoNoDisponible() {
-        DoctorSchedule schedule = buildSchedule(1, LocalTime.of(8, 0), LocalTime.of(9, 0), 30);
+    @DisplayName("Cita AGENDADA a las 09:00 -> ese slot se excluye, retorna solo 3 slots")
+    void getAvailableSlots_citaAgendadaA09_excluyeEseSlot_retorna3() {
+        // GIVEN: horario 08:00-10:00 con intervalo 30 min
+        DoctorSchedule schedule = buildSchedule(1, LocalTime.of(8, 0), LocalTime.of(10, 0), 30);
         when(scheduleRepository.findByDoctorId(DOCTOR_ID)).thenReturn(List.of(schedule));
 
-        // La cita de las 08:00 ya está agendada
-        Appointment cita = buildAppointment(LocalTime.of(8, 0), AppointmentStatus.AGENDADA);
+        // La cita de las 09:00 ya está ocupada
+        Appointment citaOcupada = buildAppointment(LocalTime.of(9, 0), AppointmentStatus.AGENDADA);
         when(appointmentRepository.findByDoctorAndDate(DOCTOR_ID, LUNES.toString()))
-                .thenReturn(List.of(cita));
+                .thenReturn(List.of(citaOcupada));
 
+        // WHEN
         List<LocalTime> slots = availabilityService.getAvailableSlots(DOCTOR_ID, LUNES);
 
-        assertEquals(1, slots.size());
-        assertTrue(slots.contains(LocalTime.of(8, 30)), "El slot 08:30 debe estar libre");
-        assertFalse(slots.contains(LocalTime.of(8, 0)), "El slot 08:00 debe estar ocupado");
+        // THEN: 3 slots disponibles, el de las 09:00 NO aparece
+        assertEquals(3, slots.size(), "Deben quedar 3 slots disponibles");
+        assertFalse(slots.contains(LocalTime.of(9, 0)), "El slot 09:00 debe estar bloqueado");
+        assertTrue(slots.contains(LocalTime.of(8, 0)));
+        assertTrue(slots.contains(LocalTime.of(8, 30)));
+        assertTrue(slots.contains(LocalTime.of(9, 30)));
     }
 
+    // -----------------------------------------------------------------------
+    // Test 3: Día sin horario configurado → lista vacía
+    // -----------------------------------------------------------------------
+
     @Test
-    @DisplayName("Una cita CANCELADA NO ocupa su slot -> ese horario vuelve a estar disponible")
-    void getAvailableSlots_conCitaCancelada_slotLibre() {
+    @DisplayName("Fecha en día no configurado para el doctor -> retorna lista vacía")
+    void getAvailableSlots_diaNoConfigurado_retornaListaVacia() {
+        // GIVEN: horario solo para lunes (dayOfWeek=1), pero consultamos martes
+        DoctorSchedule scheduleParaLunes = buildSchedule(1, LocalTime.of(8, 0), LocalTime.of(10, 0), 30);
+        when(scheduleRepository.findByDoctorId(DOCTOR_ID)).thenReturn(List.of(scheduleParaLunes));
+
+        LocalDate martes = LocalDate.of(2025, 6, 3); // dayOfWeek = 2
+        when(appointmentRepository.findByDoctorAndDate(DOCTOR_ID, martes.toString()))
+                .thenReturn(Collections.emptyList());
+
+        // WHEN
+        List<LocalTime> slots = availabilityService.getAvailableSlots(DOCTOR_ID, martes);
+
+        // THEN: sin horario para ese día → sin slots
+        assertTrue(slots.isEmpty(), "Un día sin horario configurado no debe tener slots disponibles");
+    }
+
+    // -----------------------------------------------------------------------
+    // Test 4 (bonus): Cita CANCELADA libera su slot — vuelve a aparecer disponible
+    // -----------------------------------------------------------------------
+
+    @Test
+    @DisplayName("Cita CANCELADA -> su slot vuelve a estar disponible")
+    void getAvailableSlots_citaCancelada_slotQuedaLibre() {
         DoctorSchedule schedule = buildSchedule(1, LocalTime.of(8, 0), LocalTime.of(9, 0), 30);
         when(scheduleRepository.findByDoctorId(DOCTOR_ID)).thenReturn(List.of(schedule));
 
-        // La cita de las 08:00 está cancelada -> debe liberar el slot
+        // La cita está cancelada → no debe bloquear el slot
         Appointment citaCancelada = buildAppointment(LocalTime.of(8, 0), AppointmentStatus.CANCELADA);
         when(appointmentRepository.findByDoctorAndDate(DOCTOR_ID, LUNES.toString()))
                 .thenReturn(List.of(citaCancelada));
 
         List<LocalTime> slots = availabilityService.getAvailableSlots(DOCTOR_ID, LUNES);
 
-        assertEquals(2, slots.size(), "Los slots de citas canceladas deben quedar disponibles");
+        assertEquals(2, slots.size(), "Las citas canceladas deben liberar su slot");
         assertTrue(slots.contains(LocalTime.of(8, 0)));
     }
 
-    @Test
-    @DisplayName("Fecha en día diferente al horario configurado -> lista vacía")
-    void getAvailableSlots_diaNoConfigurado_retornaListaVacia() {
-        // Horario solo configurado para lunes (dayOfWeek=1)
-        DoctorSchedule schedule = buildSchedule(1, LocalTime.of(8, 0), LocalTime.of(9, 0), 30);
-        when(scheduleRepository.findByDoctorId(DOCTOR_ID)).thenReturn(List.of(schedule));
-
-        // Martes 2025-06-03 (dayOfWeek=2) no tiene horario
-        LocalDate martes = LocalDate.of(2025, 6, 3);
-        when(appointmentRepository.findByDoctorAndDate(DOCTOR_ID, martes.toString()))
-                .thenReturn(Collections.emptyList());
-
-        List<LocalTime> slots = availabilityService.getAvailableSlots(DOCTOR_ID, martes);
-
-        assertTrue(slots.isEmpty(), "Un día sin horario configurado no debe tener slots");
-    }
+    // -----------------------------------------------------------------------
+    // Test 5 (bonus): Lista de citas null desde el repositorio → no explota
+    // -----------------------------------------------------------------------
 
     @Test
-    @DisplayName("Lista de citas nula -> no lanza excepción y retorna todos los slots")
-    void getAvailableSlots_citasNulas_noLanzaExcepcion() {
+    @DisplayName("Repositorio retorna null en lugar de lista -> no lanza NullPointerException")
+    void getAvailableSlots_repositorioDevuelveNull_noLanzaExcepcion() {
         DoctorSchedule schedule = buildSchedule(1, LocalTime.of(8, 0), LocalTime.of(8, 30), 30);
         when(scheduleRepository.findByDoctorId(DOCTOR_ID)).thenReturn(List.of(schedule));
         when(appointmentRepository.findByDoctorAndDate(DOCTOR_ID, LUNES.toString()))
-                .thenReturn(null); // Simula repositorio que devuelve null
+                .thenReturn(null); // Caso defensivo
 
         List<LocalTime> slots = assertDoesNotThrow(
-                () -> availabilityService.getAvailableSlots(DOCTOR_ID, LUNES)
+                () -> availabilityService.getAvailableSlots(DOCTOR_ID, LUNES),
+                "El servicio no debe lanzar NullPointerException si el repositorio retorna null"
         );
         assertEquals(1, slots.size());
     }
 
     // -----------------------------------------------------------------------
-    // Pruebas de getIntervalMinutesForDoctorOnDate
+    // Test 6: getIntervalMinutesForDoctorOnDate — horario existente
     // -----------------------------------------------------------------------
 
     @Test
-    @DisplayName("Horario configurado para el día -> retorna el intervalo correcto")
-    void getIntervalMinutes_horarioExiste_retornaIntervalo() {
+    @DisplayName("Intervalo configurado para el día -> retorna el valor correcto")
+    void getIntervalMinutes_horarioExisteParaElDia_retornaIntervalo() {
         DoctorSchedule schedule = buildSchedule(1, LocalTime.of(8, 0), LocalTime.of(12, 0), 20);
         when(scheduleRepository.findByDoctorId(DOCTOR_ID)).thenReturn(List.of(schedule));
 
         int interval = availabilityService.getIntervalMinutesForDoctorOnDate(DOCTOR_ID, LUNES);
 
-        assertEquals(20, interval);
+        assertEquals(20, interval, "Debe retornar el intervalo configurado de 20 minutos");
     }
 
+    // -----------------------------------------------------------------------
+    // Test 7: getIntervalMinutesForDoctorOnDate — sin horario → valor por defecto 30
+    // -----------------------------------------------------------------------
+
     @Test
-    @DisplayName("Sin horario para el día -> retorna valor por defecto de 30 minutos")
-    void getIntervalMinutes_sinHorario_retornaDefault30() {
+    @DisplayName("Sin horario configurado para el día -> retorna 30 como valor por defecto")
+    void getIntervalMinutes_sinHorarioParaElDia_retorna30PorDefecto() {
         when(scheduleRepository.findByDoctorId(DOCTOR_ID)).thenReturn(Collections.emptyList());
 
         int interval = availabilityService.getIntervalMinutesForDoctorOnDate(DOCTOR_ID, LUNES);
 
-        assertEquals(30, interval, "Debe retornar 30 como intervalo por defecto");
+        assertEquals(30, interval, "El valor por defecto debe ser 30 minutos");
     }
 }

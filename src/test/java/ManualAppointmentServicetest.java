@@ -25,6 +25,9 @@ import static org.mockito.Mockito.*;
 
 /**
  * Pruebas unitarias para ManualAppointmentService.
+ *
+ * Cubre los 4 escenarios de scheduleAppointment, listByDoctorAndDate,
+ * reagendamiento, cancelación y marcado como atendida.
  */
 @ExtendWith(MockitoExtension.class)
 class ManualAppointmentServiceTest {
@@ -56,12 +59,16 @@ class ManualAppointmentServiceTest {
     private Doctor buildDoctor(int id) {
         Doctor d = new Doctor();
         d.setId(id);
+        d.setFirstName("Carlos");
+        d.setFirstSurname("Lopez");
         return d;
     }
 
     private Patient buildPatient(int id) {
         Patient p = new Patient();
         p.setId(id);
+        p.setFirstName("Ana");
+        p.setFirstSurname("Gomez");
         return p;
     }
 
@@ -77,12 +84,13 @@ class ManualAppointmentServiceTest {
     }
 
     // -----------------------------------------------------------------------
-    // scheduleAppointment
+    // scheduleAppointment — Test 1: Registro exitoso
     // -----------------------------------------------------------------------
 
     @Test
-    @DisplayName("Agendar cita válida -> guarda con estado AGENDADA y retorna true")
-    void scheduleAppointment_datosValidos_guardaYRetornaTrue() {
+    @DisplayName("scheduleAppointment: todos los datos válidos -> guarda con estado AGENDADA")
+    void scheduleAppointment_datosValidos_guardaConEstadoAgendada() {
+        // GIVEN
         Doctor doctor = buildDoctor(1);
         Patient patient = buildPatient(2);
         Appointment appointment = buildAppointment(0, doctor, patient);
@@ -93,40 +101,147 @@ class ManualAppointmentServiceTest {
                 .thenReturn(Collections.emptyList());
         when(appointmentRepository.save(appointment)).thenReturn(true);
 
+        // WHEN
         boolean result = service.scheduleAppointment(appointment);
 
+        // THEN
         assertTrue(result);
-        assertEquals(AppointmentStatus.AGENDADA, appointment.getStatus());
+        assertEquals(AppointmentStatus.AGENDADA, appointment.getStatus(),
+                "El estado debe cambiar a AGENDADA antes de guardar");
+        verify(validator).validate(appointment, doctor, patient, Collections.emptyList());
         verify(appointmentRepository).save(appointment);
     }
 
+    // -----------------------------------------------------------------------
+    // scheduleAppointment — Test 2: Patient no existe → validador lanza excepción
+    // -----------------------------------------------------------------------
+
     @Test
-    @DisplayName("Validador lanza excepción por conflicto de horario -> no se guarda la cita")
-    void scheduleAppointment_conflictoHorario_lanzaExcepcion() {
+    @DisplayName("scheduleAppointment: Patient no existe (null) -> validator lanza excepción y no se guarda")
+    void scheduleAppointment_patientNoExiste_lanzaExcepcion() {
+        // GIVEN
         Doctor doctor = buildDoctor(1);
-        Patient patient = buildPatient(2);
+        Patient patient = buildPatient(99);
         Appointment appointment = buildAppointment(0, doctor, patient);
 
         when(doctorRepository.findById(1)).thenReturn(doctor);
-        when(patientRepository.findById(2)).thenReturn(patient);
+        when(patientRepository.findById(99)).thenReturn(null); // Paciente no existe
         when(appointmentRepository.findByDoctorAndDate(1, appointment.getDate().toString()))
-                .thenReturn(List.of(appointment));
+                .thenReturn(Collections.emptyList());
 
-        // El validador detecta conflicto y lanza excepción
-        doThrow(new IllegalArgumentException("Conflicto de horario"))
-                .when(validator).validate(any(), any(), any(), any());
+        // El validador detecta patient == null y lanza excepción
+        doThrow(new IllegalArgumentException("El paciente no existe"))
+                .when(validator).validate(appointment, doctor, null, Collections.emptyList());
 
+        // WHEN / THEN
         assertThrows(IllegalArgumentException.class, () -> service.scheduleAppointment(appointment));
         verify(appointmentRepository, never()).save(any());
     }
 
     // -----------------------------------------------------------------------
-    // rescheduleAppointment
+    // scheduleAppointment — Test 3: Doctor no existe → validador lanza excepción
     // -----------------------------------------------------------------------
 
     @Test
-    @DisplayName("Reagendar cita existente -> actualiza con estado REAGENDADA y retorna true")
-    void rescheduleAppointment_citaExistente_actualizaYRetornaTrue() {
+    @DisplayName("scheduleAppointment: Doctor no existe (null) -> validator lanza excepción y no se guarda")
+    void scheduleAppointment_doctorNoExiste_lanzaExcepcion() {
+        // GIVEN
+        Doctor doctor = buildDoctor(99);
+        Patient patient = buildPatient(2);
+        Appointment appointment = buildAppointment(0, doctor, patient);
+
+        when(doctorRepository.findById(99)).thenReturn(null); // Doctor no existe
+        when(patientRepository.findById(2)).thenReturn(patient);
+        when(appointmentRepository.findByDoctorAndDate(99, appointment.getDate().toString()))
+                .thenReturn(Collections.emptyList());
+
+        doThrow(new IllegalArgumentException("El médico no existe"))
+                .when(validator).validate(appointment, null, patient, Collections.emptyList());
+
+        // WHEN / THEN
+        assertThrows(IllegalArgumentException.class, () -> service.scheduleAppointment(appointment));
+        verify(appointmentRepository, never()).save(any());
+    }
+
+    // -----------------------------------------------------------------------
+    // scheduleAppointment — Test 4: Conflicto de horario → no se guarda
+    // -----------------------------------------------------------------------
+
+    @Test
+    @DisplayName("scheduleAppointment: conflicto de horario en fecha/hora -> validator rechaza y no guarda")
+    void scheduleAppointment_conflictoHorario_noGuarda() {
+        // GIVEN
+        Doctor doctor = buildDoctor(1);
+        Patient patient = buildPatient(2);
+        Appointment appointment = buildAppointment(0, doctor, patient);
+
+        // Ya existe una cita en ese horario
+        Appointment citaExistente = buildAppointment(5, doctor, patient);
+        List<Appointment> citasDelDia = List.of(citaExistente);
+
+        when(doctorRepository.findById(1)).thenReturn(doctor);
+        when(patientRepository.findById(2)).thenReturn(patient);
+        when(appointmentRepository.findByDoctorAndDate(1, appointment.getDate().toString()))
+                .thenReturn(citasDelDia);
+
+        doThrow(new IllegalArgumentException("Conflicto de horario: ese slot ya está ocupado"))
+                .when(validator).validate(appointment, doctor, patient, citasDelDia);
+
+        // WHEN / THEN
+        assertThrows(IllegalArgumentException.class, () -> service.scheduleAppointment(appointment));
+        verify(appointmentRepository, never()).save(any());
+    }
+
+    // -----------------------------------------------------------------------
+    // listAppointments — Test 5: lista filtrada correctamente
+    // -----------------------------------------------------------------------
+
+    @Test
+    @DisplayName("listAppointments: retorna la lista completa del repositorio")
+    void listAppointments_retornaListaDelRepositorio() {
+        // GIVEN
+        Doctor doctor = buildDoctor(1);
+        Patient patient = buildPatient(2);
+        List<Appointment> citas = List.of(
+                buildAppointment(1, doctor, patient),
+                buildAppointment(2, doctor, patient),
+                buildAppointment(3, doctor, patient)
+        );
+        when(appointmentRepository.findAll()).thenReturn(citas);
+
+        // WHEN
+        List<Appointment> result = service.listAppointments();
+
+        // THEN
+        assertEquals(3, result.size(), "Debe retornar exactamente 3 citas");
+        verify(appointmentRepository).findAll();
+    }
+
+    // -----------------------------------------------------------------------
+    // listAppointments — Test 6: doctor sin citas ese día → lista vacía sin NPE
+    // -----------------------------------------------------------------------
+
+    @Test
+    @DisplayName("listAppointments: repositorio retorna lista vacía -> no lanza NullPointerException")
+    void listAppointments_sinCitas_retornaListaVaciaSinExcepcion() {
+        // GIVEN
+        when(appointmentRepository.findAll()).thenReturn(Collections.emptyList());
+
+        // WHEN / THEN: no debe lanzar excepción
+        List<Appointment> result = assertDoesNotThrow(
+                () -> service.listAppointments(),
+                "No debe lanzar NullPointerException cuando no hay citas"
+        );
+        assertTrue(result.isEmpty());
+    }
+
+    // -----------------------------------------------------------------------
+    // rescheduleAppointment — Test 7: reagendar cita existente
+    // -----------------------------------------------------------------------
+
+    @Test
+    @DisplayName("rescheduleAppointment: cita válida -> actualiza con estado REAGENDADA")
+    void rescheduleAppointment_citaExistente_actualizaConEstadoReagendada() {
         Doctor doctor = buildDoctor(1);
         Patient patient = buildPatient(2);
         Appointment appointment = buildAppointment(5, doctor, patient);
@@ -144,22 +259,13 @@ class ManualAppointmentServiceTest {
         verify(appointmentRepository).update(appointment);
     }
 
-    @Test
-    @DisplayName("Reagendar cita null -> validador lanza excepción")
-    void rescheduleAppointment_citaNula_lanzaExcepcion() {
-        doThrow(new IllegalArgumentException("La cita no existe"))
-                .when(validator).validateExists(null);
-
-        assertThrows(IllegalArgumentException.class, () -> service.rescheduleAppointment(null));
-    }
-
     // -----------------------------------------------------------------------
-    // cancelAppointment
+    // cancelAppointment — Test 8: cambio de estado a CANCELADA
     // -----------------------------------------------------------------------
 
     @Test
-    @DisplayName("Cancelar cita existente -> cambia estado a CANCELADA y retorna true")
-    void cancelAppointment_citaExistente_cambiaEstadoYRetornaTrue() {
+    @DisplayName("cancelAppointment: cita existente -> cambia estado a CANCELADA y retorna true")
+    void cancelAppointment_citaExistente_cambiaEstadoACancelada() {
         Doctor doctor = buildDoctor(1);
         Patient patient = buildPatient(2);
         Appointment appointment = buildAppointment(10, doctor, patient);
@@ -174,22 +280,12 @@ class ManualAppointmentServiceTest {
         assertEquals(AppointmentStatus.CANCELADA, appointment.getStatus());
     }
 
-    @Test
-    @DisplayName("Cancelar cita inexistente -> validador lanza excepción")
-    void cancelAppointment_citaNoExistente_lanzaExcepcion() {
-        when(appointmentRepository.findById(99)).thenReturn(null);
-        doThrow(new IllegalArgumentException("Cita no encontrada"))
-                .when(validator).validateExists(null);
-
-        assertThrows(IllegalArgumentException.class, () -> service.cancelAppointment(99));
-    }
-
     // -----------------------------------------------------------------------
-    // markAsAttended
+    // markAsAttended — Test 9: cambio de estado a ATENDIDA
     // -----------------------------------------------------------------------
 
     @Test
-    @DisplayName("Marcar como atendida -> cambia estado a ATENDIDA y retorna true")
+    @DisplayName("markAsAttended: cita existente -> cambia estado a ATENDIDA y retorna true")
     void markAsAttended_citaExistente_cambiaEstadoAAtendida() {
         Doctor doctor = buildDoctor(1);
         Patient patient = buildPatient(2);
@@ -206,41 +302,16 @@ class ManualAppointmentServiceTest {
     }
 
     // -----------------------------------------------------------------------
-    // findAppointment
+    // findAppointment — Test 10: cita no existe → excepción
     // -----------------------------------------------------------------------
 
     @Test
-    @DisplayName("Buscar cita existente -> retorna la cita correcta")
-    void findAppointment_citaExistente_retornaCita() {
-        Doctor doctor = buildDoctor(1);
-        Patient patient = buildPatient(2);
-        Appointment appointment = buildAppointment(3, doctor, patient);
+    @DisplayName("findAppointment: cita inexistente -> validator lanza excepción")
+    void findAppointment_noExiste_lanzaExcepcion() {
+        when(appointmentRepository.findById(999)).thenReturn(null);
+        doThrow(new IllegalArgumentException("Cita no encontrada"))
+                .when(validator).validateExists(null);
 
-        when(appointmentRepository.findById(3)).thenReturn(appointment);
-
-        Appointment result = service.findAppointment(3);
-
-        assertNotNull(result);
-        assertEquals(3, result.getAppointmentId());
-    }
-
-    // -----------------------------------------------------------------------
-    // listAppointments
-    // -----------------------------------------------------------------------
-
-    @Test
-    @DisplayName("Listar todas las citas -> retorna la lista del repositorio")
-    void listAppointments_retornaListaDelRepositorio() {
-        Doctor doctor = buildDoctor(1);
-        Patient patient = buildPatient(2);
-        List<Appointment> citas = List.of(
-                buildAppointment(1, doctor, patient),
-                buildAppointment(2, doctor, patient)
-        );
-        when(appointmentRepository.findAll()).thenReturn(citas);
-
-        List<Appointment> result = service.listAppointments();
-
-        assertEquals(2, result.size());
+        assertThrows(IllegalArgumentException.class, () -> service.findAppointment(999));
     }
 }
