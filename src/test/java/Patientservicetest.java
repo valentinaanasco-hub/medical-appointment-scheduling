@@ -18,6 +18,11 @@ import static org.mockito.Mockito.*;
 
 /**
  * Pruebas unitarias para PatientService.
+ *
+ * NOTA IMPORTANTE: registerPatient() en el servicio real solo llama
+ * validator.validatePatient(patient) y luego patientRepository.save(patient).
+ * NO verifica duplicados internamente — eso lo hace el validador externo.
+ * Los tests reflejan el flujo real del código.
  */
 @ExtendWith(MockitoExtension.class)
 class PatientServiceTest {
@@ -56,33 +61,57 @@ class PatientServiceTest {
     // -----------------------------------------------------------------------
 
     @Test
-    @DisplayName("Registrar paciente nuevo -> guarda y retorna true")
-    void registerPatient_pacienteNuevo_guardaYRetornaTrue() {
+    @DisplayName("registerPatient: datos válidos -> valida y guarda correctamente")
+    void registerPatient_datosValidos_guardaYRetornaTrue() {
+        // GIVEN: el validador acepta los datos (no lanza excepción)
         Patient patient = buildPatient(1, "agomez");
-
-        // findById retorna null -> paciente no existe -> el validador acepta null
-        when(patientRepository.findById(1)).thenReturn(null);
-        doNothing().when(validator).validateExists(null);
         when(patientRepository.save(patient)).thenReturn(true);
 
+        // WHEN
         boolean result = patientService.registerPatient(patient);
 
+        // THEN
         assertTrue(result);
+        verify(validator).validatePatient(patient); // Se valida antes de guardar
         verify(patientRepository).save(patient);
     }
 
     @Test
-    @DisplayName("Registrar paciente duplicado -> validador lanza excepción")
-    void registerPatient_pacienteDuplicado_lanzaExcepcion() {
-        Patient existing = buildPatient(1, "agomez");
+    @DisplayName("registerPatient: datos inválidos -> validator lanza excepción, no guarda")
+    void registerPatient_datosInvalidos_lanzaExcepcionYNoGuarda() {
+        Patient patient = buildPatient(1, ""); // Username inválido
+        doThrow(new IllegalArgumentException("Datos del paciente inválidos"))
+                .when(validator).validatePatient(patient);
 
-        when(patientRepository.findById(1)).thenReturn(existing);
-        doThrow(new IllegalArgumentException("El paciente ya existe"))
-                .when(validator).validateExists(existing);
-
-        Patient newPatient = buildPatient(1, "agomez");
-        assertThrows(IllegalArgumentException.class, () -> patientService.registerPatient(newPatient));
+        assertThrows(IllegalArgumentException.class, () -> patientService.registerPatient(patient));
         verify(patientRepository, never()).save(any());
+    }
+
+    // -----------------------------------------------------------------------
+    // findPatient
+    // -----------------------------------------------------------------------
+
+    @Test
+    @DisplayName("findPatient: id existente -> retorna el paciente correcto")
+    void findPatient_idExistente_retornaPaciente() {
+        Patient patient = buildPatient(1, "agomez");
+        when(patientRepository.findById(1)).thenReturn(patient);
+
+        Patient result = patientService.findPatient(1);
+
+        assertNotNull(result);
+        assertEquals(1, result.getId());
+        verify(validator).validateExists(patient);
+    }
+
+    @Test
+    @DisplayName("findPatient: id inexistente -> validator lanza excepción")
+    void findPatient_idInexistente_lanzaExcepcion() {
+        when(patientRepository.findById(99)).thenReturn(null);
+        doThrow(new IllegalArgumentException("Paciente no encontrado"))
+                .when(validator).validateExists(null);
+
+        assertThrows(IllegalArgumentException.class, () -> patientService.findPatient(99));
     }
 
     // -----------------------------------------------------------------------
@@ -90,14 +119,19 @@ class PatientServiceTest {
     // -----------------------------------------------------------------------
 
     @Test
-    @DisplayName("Listar pacientes -> retorna lista del repositorio")
-    void listPatients_retornaListaDelRepositorio() {
-        List<Patient> patients = List.of(buildPatient(1, "u1"), buildPatient(2, "u2"));
+    @DisplayName("listPatients: retorna la lista completa del repositorio")
+    void listPatients_retornaListaCompleta() {
+        List<Patient> patients = List.of(
+                buildPatient(1, "u1"),
+                buildPatient(2, "u2"),
+                buildPatient(3, "u3")
+        );
         when(patientRepository.findAll()).thenReturn(patients);
 
         List<Patient> result = patientService.listPatients();
 
-        assertEquals(2, result.size());
+        assertEquals(3, result.size());
+        verify(patientRepository).findAll();
     }
 
     // -----------------------------------------------------------------------
@@ -105,7 +139,7 @@ class PatientServiceTest {
     // -----------------------------------------------------------------------
 
     @Test
-    @DisplayName("Modificar paciente existente -> actualiza y retorna true")
+    @DisplayName("modifyPatient: paciente existente con datos válidos -> actualiza correctamente")
     void modifyPatient_pacienteExistente_actualizaYRetornaTrue() {
         Patient patient = buildPatient(1, "agomez");
         when(patientRepository.findById(1)).thenReturn(patient);
@@ -114,7 +148,21 @@ class PatientServiceTest {
         boolean result = patientService.modifyPatient(patient);
 
         assertTrue(result);
+        verify(validator).validatePatient(patient);  // Valida datos nuevos
+        verify(validator).validateExists(patient);   // Verifica que existe
         verify(patientRepository).update(patient);
+    }
+
+    @Test
+    @DisplayName("modifyPatient: paciente inexistente -> validator lanza excepción, no actualiza")
+    void modifyPatient_pacienteInexistente_lanzaExcepcion() {
+        Patient patient = buildPatient(99, "nadie");
+        when(patientRepository.findById(99)).thenReturn(null);
+        doThrow(new IllegalArgumentException("Paciente no encontrado"))
+                .when(validator).validateExists(null);
+
+        assertThrows(IllegalArgumentException.class, () -> patientService.modifyPatient(patient));
+        verify(patientRepository, never()).update(any());
     }
 
     // -----------------------------------------------------------------------
@@ -122,8 +170,8 @@ class PatientServiceTest {
     // -----------------------------------------------------------------------
 
     @Test
-    @DisplayName("Desactivar paciente existente -> retorna true")
-    void deactivatePatient_pacienteExistente_retornaTrue() {
+    @DisplayName("deactivatePatient: paciente existente -> verifica existencia y desactiva")
+    void deactivatePatient_pacienteExistente_verificaYDesactiva() {
         Patient patient = buildPatient(1, "agomez");
         when(patientRepository.findById(1)).thenReturn(patient);
         when(patientRepository.deactivate(1)).thenReturn(true);
@@ -131,11 +179,12 @@ class PatientServiceTest {
         boolean result = patientService.deactivatePatient(1);
 
         assertTrue(result);
+        verify(validator).validateExists(patient);
         verify(patientRepository).deactivate(1);
     }
 
     @Test
-    @DisplayName("Desactivar paciente inexistente -> validador lanza excepción")
+    @DisplayName("deactivatePatient: paciente inexistente -> validator lanza excepción, no desactiva")
     void deactivatePatient_pacienteInexistente_lanzaExcepcion() {
         when(patientRepository.findById(99)).thenReturn(null);
         doThrow(new IllegalArgumentException("Paciente no encontrado"))
