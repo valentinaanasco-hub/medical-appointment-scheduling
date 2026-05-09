@@ -7,7 +7,7 @@ Arquitectura de microservicios con Spring Boot + React.
 
 | Servicio | Puerto | Descripción |
 |---|---|---|
-| api-gateway | 8080 | Enrutamiento central |
+| api-gateway | 8090 | Enrutamiento central |
 | identity-service | 8081 | Autenticación, usuarios, roles |
 | medical-staff-service | 8082 | Médicos, especialidades, horarios |
 | patient-service | 8083 | Pacientes |
