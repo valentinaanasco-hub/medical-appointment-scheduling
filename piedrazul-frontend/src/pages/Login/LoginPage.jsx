@@ -4,32 +4,44 @@ import { useAuth } from '../../api/AuthContext'
 import { identityApi } from '../../api'
 
 export default function LoginPage() {
-  const navigate      = useNavigate()
-  const { login }     = useAuth()
+  const navigate    = useNavigate()
+  const { login }   = useAuth()
 
-  const [form, setForm]       = useState({ username: '', password: '' })
-  const [error, setError]     = useState('')
-  const [loading, setLoading] = useState(false)
+  const [form, setForm]         = useState({ username: '', password: '' })
+  const [errors, setErrors]     = useState({})
+  const [loading, setLoading]   = useState(false)
   const [showPass, setShowPass] = useState(false)
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
-    setError('')
+    setErrors({ ...errors, [e.target.name]: '', general: '' })
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!form.username || !form.password) {
-      setError('Todos los campos son obligatorios')
-      return
-    }
+  const validate = () => {
+    const e = {}
+    if (!form.username.trim())
+      e.username = 'El usuario es obligatorio'
+    if (!form.password)
+      e.password = 'La contraseña es obligatoria'
+    return e
+  }
+
+  const handleSubmit = async (ev) => {
+    ev.preventDefault()
+    const newErrors = validate()
+    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
+
     setLoading(true)
     try {
-      const response = await identityApi.login(form)
+      const response = await identityApi.login({
+        username: form.username.trim(),
+        password: form.password,
+      })
       login(response.data)
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.message || 'Credenciales incorrectas')
+      const msg = err.response?.data?.message || 'Credenciales incorrectas'
+      setErrors({ general: msg })
     } finally {
       setLoading(false)
     }
@@ -54,15 +66,17 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
 
-              {/* --- Correo --- */}
+              {/* --- Correo o usuario --- */}
               <div>
                 <label className="block text-sm text-gray-500 mb-1">
                   Correo o usuario <span className="text-red-500">*</span>
                 </label>
                 <input type="text" name="username" value={form.username}
                        onChange={handleChange} placeholder="usuario@gmail.com"
-                       className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm
-                  focus:outline-none focus:border-blue-500 transition-colors" />
+                       className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors
+                  ${errors.username ? 'border-red-400' : 'border-gray-200 focus:border-blue-500'}`}
+                />
+                {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username}</p>}
               </div>
 
               {/* --- Contraseña con toggle --- */}
@@ -75,8 +89,8 @@ export default function LoginPage() {
                       type={showPass ? 'text' : 'password'}
                       name="password" value={form.password}
                       onChange={handleChange} placeholder="••••••••"
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-10 text-sm
-                    focus:outline-none focus:border-blue-500 transition-colors"
+                      className={`w-full border rounded-xl px-4 py-3 pr-10 text-sm focus:outline-none transition-colors
+                    ${errors.password ? 'border-red-400' : 'border-gray-200 focus:border-blue-500'}`}
                   />
                   <button type="button" onClick={() => setShowPass(!showPass)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400
@@ -84,20 +98,21 @@ export default function LoginPage() {
                     {showPass ? '🙈' : '👁'}
                   </button>
                 </div>
+                {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
               </div>
 
-              {/* --- Recordarme / Olvidé contraseña --- */}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer">
-                  <input type="checkbox" className="rounded" />
-                  Recordarme
-                </label>
-                <button type="button" className="text-sm text-blue-600 hover:underline">
-                  ¿Olvidaste tu contraseña?
-                </button>
-              </div>
+              {/* --- Recordarme --- */}
+              <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer">
+                <input type="checkbox" className="rounded" />
+                Recordarme
+              </label>
 
-              {error && <p className="text-red-500 text-sm">{error}</p>}
+              {/* --- Error general --- */}
+              {errors.general && (
+                  <p className="text-red-500 text-sm bg-red-50 rounded-xl py-2 px-3">
+                    {errors.general}
+                  </p>
+              )}
 
               <button type="submit" disabled={loading}
                       className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold text-sm
