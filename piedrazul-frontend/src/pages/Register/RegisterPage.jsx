@@ -25,9 +25,7 @@ export default function RegisterPage() {
     confirmPassword: '',
     phone: '',
     gender: '',
-    birthDay: '',
-    birthMonth: '',
-    birthYear: '',
+    birthDate: '',
   })
 
   const [errors, setErrors]           = useState({})
@@ -43,35 +41,108 @@ export default function RegisterPage() {
 
   const validate = () => {
     const e = {}
-    if (!form.documentId)   e.documentId   = 'Obligatorio'
-    if (!form.userTypeId)   e.userTypeId   = 'Obligatorio'
-    if (!form.firstName)    e.firstName    = 'Obligatorio'
-    if (!form.firstSurname) e.firstSurname = 'Obligatorio'
-    if (!form.email)        e.email        = 'Obligatorio'
+    const onlyLetters = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$/
+
+    if (!form.firstName.trim())
+      e.firstName = 'El primer nombre es obligatorio'
+    else if (!onlyLetters.test(form.firstName.trim()))
+      e.firstName = 'Solo se permiten letras'
+
+    if (!form.firstSurname.trim())
+      e.firstSurname = 'El primer apellido es obligatorio'
+    else if (!onlyLetters.test(form.firstSurname.trim()))
+      e.firstSurname = 'Solo se permiten letras'
+
+    if (form.middleName && !onlyLetters.test(form.middleName.trim()))
+      e.middleName = 'Solo se permiten letras'
+
+    if (form.lastName && !onlyLetters.test(form.lastName.trim()))
+      e.lastName = 'Solo se permiten letras'
+
+    if (!form.email.trim())
+      e.email = 'El correo es obligatorio'
     else if (!/^[\w._%+\-]+@[\w.\-]+\.[a-zA-Z]{2,}$/.test(form.email))
-      e.email = 'Formato inválido'
-    if (!form.password)          e.password = 'Obligatorio'
-    else if (form.password.length < 8) e.password = 'Mínimo 8 caracteres'
-    else if (!/\d/.test(form.password)) e.password = 'Debe contener al menos un número'
-    if (form.password !== form.confirmPassword) e.confirmPassword = 'No coinciden'
-    if (!form.phone) e.phone = 'Obligatorio'
-    else if (!/^\d{7,10}$/.test(form.phone)) e.phone = '7 a 10 dígitos'
-    if (!form.gender) e.gender = 'Obligatorio'
+      e.email = 'Formato de correo inválido'
+
+    if (!form.phone.trim())
+      e.phone = 'El teléfono es obligatorio'
+    else if (!/^\d{7,10}$/.test(form.phone))
+      e.phone = 'Debe tener entre 7 y 10 dígitos'
+
+    if (!form.gender)
+      e.gender = 'El género es obligatorio'
+
+    if (!form.userTypeId)
+      e.userTypeId = 'El tipo de documento es obligatorio'
+
+    if (!form.documentId.trim())
+      e.documentId = 'El número de documento es obligatorio'
+    else if (!/^\d{6,15}$/.test(form.documentId))
+      e.documentId = 'Debe tener entre 6 y 15 dígitos'
+
+    if (!form.password)
+      e.password = 'La contraseña es obligatoria'
+    else if (form.password.length < 8)
+      e.password = 'Mínimo 8 caracteres'
+    else if (!/\d/.test(form.password))
+      e.password = 'Debe contener al menos un número'
+
+    if (!form.confirmPassword)
+      e.confirmPassword = 'Confirma tu contraseña'
+    else if (form.password !== form.confirmPassword)
+      e.confirmPassword = 'Las contraseñas no coinciden'
+
+    if (!form.birthDate) {
+      e.birthDate = 'La fecha de nacimiento es obligatoria'
+    } else {
+      const birth = new Date(form.birthDate)
+      const now   = new Date()
+      const minAge = new Date(now.getFullYear() - 100, now.getMonth(), now.getDate())
+      const maxAge = new Date(now.getFullYear() - 1,   now.getMonth(), now.getDate())
+      if (birth > maxAge)
+        e.birthDate = 'Debes tener al menos 1 año de edad'
+      else if (birth < minAge)
+        e.birthDate = 'Fecha de nacimiento inválida'
+    }
+
     return e
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (ev) => {
+    ev.preventDefault()
     const newErrors = validate()
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
 
+    // Separar la fecha en día, mes y año para el backend
+    let birthDay = '', birthMonth = '', birthYear = ''
+    if (form.birthDate) {
+      const [y, m, d] = form.birthDate.split('-')
+      birthDay   = d
+      birthMonth = m
+      birthYear  = y
+    }
+
     setLoading(true)
     try {
-      await patientApi.registerWeb({ ...form, documentId: parseInt(form.documentId) })
+      await patientApi.registerWeb({
+        documentId:   parseInt(form.documentId),
+        userTypeId:   form.userTypeId,
+        firstName:    form.firstName.trim(),
+        middleName:   form.middleName.trim(),
+        firstSurname: form.firstSurname.trim(),
+        lastName:     form.lastName.trim(),
+        email:        form.email.trim(),
+        password:     form.password,
+        phone:        form.phone.trim(),
+        gender:       form.gender,
+        birthDay,
+        birthMonth,
+        birthYear,
+      })
       setSuccess(true)
       setTimeout(() => navigate('/login'), 2500)
     } catch (err) {
-      setErrors({ general: err.response?.data?.message || 'Error al registrarse' })
+      setErrors({ general: err.response?.data?.message || 'Error al registrarse. Intenta de nuevo.' })
     } finally {
       setLoading(false)
     }
@@ -115,7 +186,7 @@ export default function RegisterPage() {
                 <Field label="Primer nombre" name="firstName" required
                        value={form.firstName} onChange={handleChange} error={errors.firstName} />
                 <Field label="Segundo nombre" name="middleName"
-                       value={form.middleName} onChange={handleChange} />
+                       value={form.middleName} onChange={handleChange} error={errors.middleName} />
               </div>
 
               {/* --- Fila 2: Primer apellido | Segundo apellido --- */}
@@ -123,7 +194,7 @@ export default function RegisterPage() {
                 <Field label="Primer apellido" name="firstSurname" required
                        value={form.firstSurname} onChange={handleChange} error={errors.firstSurname} />
                 <Field label="Segundo apellido" name="lastName"
-                       value={form.lastName} onChange={handleChange} />
+                       value={form.lastName} onChange={handleChange} error={errors.lastName} />
               </div>
 
               {/* --- Fila 3: Correo | Teléfono --- */}
@@ -138,19 +209,18 @@ export default function RegisterPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-500 mb-1">
-                    Fecha de nacimiento
+                    Fecha de nacimiento <span className="text-red-500">*</span>
                   </label>
-                  <div className="grid grid-cols-3 gap-1">
-                    <input name="birthDay" placeholder="DD" maxLength={2}
-                           value={form.birthDay} onChange={handleChange}
-                           className="border border-gray-200 rounded-xl px-2 py-3 text-sm text-center focus:outline-none focus:border-blue-500 transition-colors" />
-                    <input name="birthMonth" placeholder="MM" maxLength={2}
-                           value={form.birthMonth} onChange={handleChange}
-                           className="border border-gray-200 rounded-xl px-2 py-3 text-sm text-center focus:outline-none focus:border-blue-500 transition-colors" />
-                    <input name="birthYear" placeholder="AAAA" maxLength={4}
-                           value={form.birthYear} onChange={handleChange}
-                           className="border border-gray-200 rounded-xl px-2 py-3 text-sm text-center focus:outline-none focus:border-blue-500 transition-colors" />
-                  </div>
+                  <input
+                      type="date"
+                      name="birthDate"
+                      value={form.birthDate}
+                      onChange={handleChange}
+                      max={new Date().toISOString().split('T')[0]}
+                      className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors
+                    ${errors.birthDate ? 'border-red-400' : 'border-gray-200 focus:border-blue-500'}`}
+                  />
+                  {errors.birthDate && <p className="text-red-500 text-xs mt-1">{errors.birthDate}</p>}
                 </div>
 
                 <div>
@@ -206,7 +276,9 @@ export default function RegisterPage() {
               </div>
 
               {errors.general && (
-                  <p className="text-red-500 text-sm text-center">{errors.general}</p>
+                  <p className="text-red-500 text-sm text-center bg-red-50 rounded-xl py-2 px-3">
+                    {errors.general}
+                  </p>
               )}
 
               <button type="submit" disabled={loading}
@@ -243,7 +315,7 @@ function Field({ label, name, value, onChange, error, required, type = 'text' })
   )
 }
 
-// --- Campo de contraseña con toggle de visibilidad ---
+// --- Campo de contraseña con toggle ---
 function PasswordField({ label, name, value, onChange, error, required, show, onToggle }) {
   return (
       <div>
@@ -258,7 +330,8 @@ function PasswordField({ label, name, value, onChange, error, required, show, on
             ${error ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`}
           />
           <button type="button" onClick={onToggle}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors text-base select-none">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400
+            hover:text-gray-600 transition-colors text-base select-none">
             {show ? '🙈' : '👁'}
           </button>
         </div>
