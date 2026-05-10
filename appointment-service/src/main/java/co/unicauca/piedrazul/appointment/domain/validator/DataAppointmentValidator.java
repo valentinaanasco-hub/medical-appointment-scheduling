@@ -7,9 +7,7 @@ import java.util.List;
 
 /**
  * Valida que los datos básicos de la cita sean correctos:
- * fecha no nula, hora inicio anterior a hora fin, IDs positivos.
- *
- * @author Santiago Solarte
+ * fecha no nula, hora inicio anterior a hora fin, IDs positivos
  */
 @Component
 public class DataAppointmentValidator implements AppointmentValidator {

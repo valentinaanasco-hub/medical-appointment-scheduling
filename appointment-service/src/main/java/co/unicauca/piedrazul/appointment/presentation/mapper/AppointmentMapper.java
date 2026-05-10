@@ -6,9 +6,7 @@ import co.unicauca.piedrazul.appointment.presentation.dto.AppointmentDTOs.Create
 import org.springframework.stereotype.Component;
 
 /**
- * Mapper para convertir entre entidad Appointment y sus DTOs.
- *
- * @author Santiago Solarte
+ * Mapper para convertir entre entidad Appointment y sus DTOs
  */
 @Component
 public class AppointmentMapper {
@@ -20,7 +18,11 @@ public class AppointmentMapper {
         appointment.setDate(request.date());
         appointment.setStartTime(request.startTime());
         appointment.setEndTime(request.endTime());
-        appointment.setReason(request.reason() != null ? request.reason() : "Sin especificar");
+        if (request.reason() != null) {
+            appointment.setReason(request.reason());
+        } else {
+            appointment.setReason("Sin especificar");
+        }
         appointment.setNotes(request.notes());
         return appointment;
     }

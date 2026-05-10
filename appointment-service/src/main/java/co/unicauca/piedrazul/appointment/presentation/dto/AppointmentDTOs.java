@@ -8,13 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 /**
- * DTOs del Appointment Service.
- *
- * @author Valentina Añasco
- * @author Camila Dorado
- * @author Felipe Gutierrez
- * @author Ginner Ortega
- * @author Santiago Solarte
+ * DTOs del Appointment Service
  */
 public class AppointmentDTOs {
 

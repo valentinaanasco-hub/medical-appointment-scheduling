@@ -14,14 +14,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 /**
- * Entidad que representa una cita médica.
- * Mapeada a la tabla appointments de la base de datos.
- *
- * @author Valentina Añasco
- * @author Camila Dorado
- * @author Felipe Gutierrez
- * @author Ginner Ortega
- * @author Santiago Solarte
+ * Entidad que representa una cita médica
+ * Mapeada a la tabla appointments de la base de datos
  */
 @Entity
 @Table(name = "appointments")

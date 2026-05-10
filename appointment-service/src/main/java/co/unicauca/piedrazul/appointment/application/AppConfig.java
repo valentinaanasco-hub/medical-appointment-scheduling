@@ -6,9 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Configuración de beans de la aplicación.
- *
- * @author Santiago Solarte
+ * Configuración de beans de la aplicación
  */
 @Configuration
 public class AppConfig {

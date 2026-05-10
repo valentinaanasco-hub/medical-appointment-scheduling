@@ -7,12 +7,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 /**
- * Contrato del servicio de citas médicas.
- *
- * Interface Segregation: define solo los métodos que el controlador necesita.
- * Dependency Inversion: el controlador depende de esta abstracción.
- *
- * @author Santiago Solarte
+ * Contrato del servicio de citas médicas
  */
 public interface IAppointmentService {
 

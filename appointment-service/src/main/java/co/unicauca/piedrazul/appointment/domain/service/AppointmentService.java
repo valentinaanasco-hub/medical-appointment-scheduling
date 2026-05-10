@@ -12,16 +12,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 /**
- * Servicio de dominio para gestión de citas médicas.
- *
- * Open/Closed: validaciones inyectadas como lista de AppointmentValidator.
- * Para agregar una regla nueva, crear @Component que implemente AppointmentValidator.
- *
- * @author Valentina Añasco
- * @author Camila Dorado
- * @author Felipe Gutierrez
- * @author Ginner Ortega
- * @author Santiago Solarte
+ * Servicio de dominio para gestión de citas médicas
  */
 @Service
 public class AppointmentService implements IAppointmentService {
@@ -38,8 +29,9 @@ public class AppointmentService implements IAppointmentService {
     @Override
     @Transactional
     public Appointment scheduleAppointment(Appointment appointment) {
-        List<Appointment> existingOnDate = getActiveAppointmentsByDoctorAndDate(
-                appointment.getDoctorId(), appointment.getDate());
+        int doctorId = appointment.getDoctorId();
+        LocalDate date = appointment.getDate();
+        List<Appointment> existingOnDate = getActiveAppointmentsByDoctorAndDate(doctorId, date);
         runValidators(appointment, existingOnDate);
         appointment.setStatus(AppointmentStatus.AGENDADA);
         return appointmentRepository.save(appointment);
@@ -59,8 +51,8 @@ public class AppointmentService implements IAppointmentService {
         appointment.setStartTime(newStartTime);
         appointment.setEndTime(newEndTime);
 
-        List<Appointment> existingOnDate = getActiveAppointmentsByDoctorAndDate(
-                appointment.getDoctorId(), newDate);
+        int doctorId = appointment.getDoctorId();
+        List<Appointment> existingOnDate = getActiveAppointmentsByDoctorAndDate(doctorId, newDate);
         runValidators(appointment, existingOnDate);
 
         appointment.setStatus(AppointmentStatus.REAGENDADA);

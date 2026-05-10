@@ -11,13 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repositorio JPA para la entidad Appointment.
- *
- * @author Valentina Añasco
- * @author Camila Dorado
- * @author Felipe Gutierrez
- * @author Ginner Ortega
- * @author Santiago Solarte
+ * Repositorio JPA para la entidad Appointment
  */
 @Repository
 public interface AppointmentRepository extends JpaRepository<Appointment, Integer> {

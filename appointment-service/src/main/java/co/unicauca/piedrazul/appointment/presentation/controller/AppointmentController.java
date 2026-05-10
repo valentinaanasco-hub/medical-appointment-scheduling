@@ -22,16 +22,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Controlador REST para gestión de citas médicas.
- *
- * @author Valentina Añasco
- * @author Camila Dorado
- * @author Felipe Gutierrez
- * @author Ginner Ortega
- * @author Santiago Solarte
+ * Controlador REST para gestión de citas médicas
  */
 @RestController
 @RequestMapping("/api/v1/appointments")
@@ -54,13 +49,12 @@ public class AppointmentController {
             @PathVariable int doctorId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
-        List<AppointmentResponse> appointments = appointmentService
-                .listByDoctorAndDate(doctorId, date)
-                .stream()
-                .map(appointmentMapper::toResponse)
-                .toList();
-
-        return ResponseEntity.ok(appointments);
+        List<Appointment> found = appointmentService.listByDoctorAndDate(doctorId, date);
+        List<AppointmentResponse> response = new ArrayList<>();
+        for (Appointment a : found) {
+            response.add(appointmentMapper.toResponse(a));
+        }
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
@@ -130,20 +124,22 @@ public class AppointmentController {
     @GetMapping
     @Operation(summary = "Listar todas las citas")
     public ResponseEntity<List<AppointmentResponse>> listAll() {
-        List<AppointmentResponse> appointments = appointmentService.listAll()
-                .stream()
-                .map(appointmentMapper::toResponse)
-                .toList();
-        return ResponseEntity.ok(appointments);
+        List<Appointment> found = appointmentService.listAll();
+        List<AppointmentResponse> response = new ArrayList<>();
+        for (Appointment a : found) {
+            response.add(appointmentMapper.toResponse(a));
+        }
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/patient/{patientId}")
     @Operation(summary = "Listar citas de un paciente")
     public ResponseEntity<List<AppointmentResponse>> listByPatient(@PathVariable int patientId) {
-        List<AppointmentResponse> appointments = appointmentService.listByPatient(patientId)
-                .stream()
-                .map(appointmentMapper::toResponse)
-                .toList();
-        return ResponseEntity.ok(appointments);
+        List<Appointment> found = appointmentService.listByPatient(patientId);
+        List<AppointmentResponse> response = new ArrayList<>();
+        for (Appointment a : found) {
+            response.add(appointmentMapper.toResponse(a));
+        }
+        return ResponseEntity.ok(response);
     }
 }

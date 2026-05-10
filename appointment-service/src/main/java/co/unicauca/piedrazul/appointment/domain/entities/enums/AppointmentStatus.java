@@ -1,13 +1,7 @@
 package co.unicauca.piedrazul.appointment.domain.entities.enums;
 
 /**
- * Estados posibles de una cita médica.
- *
- * @author Valentina Añasco
- * @author Camila Dorado
- * @author Felipe Gutierrez
- * @author Ginner Ortega
- * @author Santiago Solarte
+ * Estados posibles de una cita médica
  */
 public enum AppointmentStatus {
     AGENDADA,
