@@ -142,7 +142,13 @@ export default function RegisterPage() {
       setSuccess(true)
       setTimeout(() => navigate('/login'), 2500)
     } catch (err) {
-      setErrors({ general: err.response?.data?.message || 'Error al registrarse. Intenta de nuevo.' })
+      const msg = err.response?.data?.message || ''
+      if (msg.toLowerCase().includes('correo') || msg.toLowerCase().includes('username'))
+        setErrors({ general: 'Este correo electrónico ya está registrado. Intenta con otro.' })
+      else if (msg.toLowerCase().includes('document') || msg.toLowerCase().includes('id'))
+        setErrors({ general: 'Este número de documento ya está registrado en el sistema.' })
+      else
+        setErrors({ general: 'Ocurrió un error al registrarse. Por favor intenta de nuevo.' })
     } finally {
       setLoading(false)
     }
