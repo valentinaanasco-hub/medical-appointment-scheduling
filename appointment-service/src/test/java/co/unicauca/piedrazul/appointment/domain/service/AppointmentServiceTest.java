@@ -1,5 +1,6 @@
 package co.unicauca.piedrazul.appointment.domain.service;
 
+import co.unicauca.piedrazul.appointment.application.AppointmentEventPublisher;
 import co.unicauca.piedrazul.appointment.domain.entities.Appointment;
 import co.unicauca.piedrazul.appointment.domain.entities.enums.AppointmentStatus;
 import co.unicauca.piedrazul.appointment.domain.repository.AppointmentRepository;
@@ -16,12 +17,9 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * Pruebas unitarias para AppointmentService.
@@ -30,14 +28,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AppointmentServiceTest {
 
-    @Mock
-    private AppointmentRepository appointmentRepository;
-
-    @Mock
-    private ManualAppointmentScheduling manualScheduling;
-
-    @Mock
-    private RescheduleAppointmentScheduling rescheduleScheduling;
+    @Mock private AppointmentRepository           appointmentRepository;
+    @Mock private ManualAppointmentScheduling     manualScheduling;
+    @Mock private RescheduleAppointmentScheduling rescheduleScheduling;
+    @Mock private AppointmentEventPublisher       eventPublisher;
 
     private AppointmentService appointmentService;
 
@@ -46,7 +40,8 @@ class AppointmentServiceTest {
         appointmentService = new AppointmentService(
                 appointmentRepository,
                 manualScheduling,
-                rescheduleScheduling
+                rescheduleScheduling,
+                eventPublisher
         );
     }
 
@@ -90,6 +85,7 @@ class AppointmentServiceTest {
 
         assertEquals(AppointmentStatus.CANCELADA, result.getStatus());
         verify(appointmentRepository).save(appointment);
+        verify(eventPublisher).publishAppointmentCreated(appointment);
     }
 
     @Test
@@ -111,6 +107,7 @@ class AppointmentServiceTest {
         Appointment result = appointmentService.markAsAttended(3);
 
         assertEquals(AppointmentStatus.ATENDIDA, result.getStatus());
+        verify(eventPublisher).publishAppointmentCreated(appointment);
     }
 
     // --- findById ---
