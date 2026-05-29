@@ -157,15 +157,27 @@ function DoctorDashboard({ user }) {
         <div className="grid grid-cols-2 gap-4">
           <Link to="/doctor/appointments"
                 className="bg-blue-600 text-white rounded-2xl p-5 hover:bg-blue-700 transition-colors">
-            <span className="text-2xl block mb-2">📅</span>
+            <div className="w-8 h-8 mb-3">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                   strokeLinecap="round" strokeLinejoin="round" className="w-full h-full opacity-90">
+                <rect x="3" y="4" width="18" height="18" rx="3"/>
+                <path d="M8 2v4M16 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
+              </svg>
+            </div>
             <p className="font-semibold text-sm">Gestionar Citas</p>
-            <p className="text-blue-200 text-xs mt-1">Ver, atender o reagendar</p>
+            <p className="text-blue-200 text-xs mt-0.5">Ver, atender o reagendar</p>
           </Link>
           <Link to="/appointments/new"
                 className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow">
-            <span className="text-2xl block mb-2">📝</span>
+            <div className="w-8 h-8 mb-3 text-gray-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                   strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+                <rect x="3" y="4" width="18" height="18" rx="3"/>
+                <path d="M8 2v4M16 2v4M3 10h18M12 14v4M10 16h4"/>
+              </svg>
+            </div>
             <p className="font-semibold text-sm text-gray-800">Registrar Cita</p>
-            <p className="text-gray-400 text-xs mt-1">Nueva cita para un paciente</p>
+            <p className="text-gray-400 text-xs mt-0.5">Nueva cita para un paciente</p>
           </Link>
         </div>
       </div>
@@ -417,24 +429,47 @@ function AgendadorDashboard({ user }) {
       <div>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Acciones rápidas</h2>
         <div className="grid grid-cols-3 gap-4">
+
           <Link to="/appointments/new"
                 className="bg-blue-600 text-white rounded-2xl p-5 hover:bg-blue-700 transition-colors">
-            <span className="text-2xl block mb-2">⊕</span>
+            <div className="w-8 h-8 mb-3">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                   strokeLinecap="round" strokeLinejoin="round" className="w-full h-full opacity-90">
+                <rect x="3" y="4" width="18" height="18" rx="3"/>
+                <path d="M8 2v4M16 2v4M3 10h18M12 14v4M10 16h4"/>
+              </svg>
+            </div>
             <p className="font-semibold text-sm">Registrar Cita</p>
-            <p className="text-blue-200 text-xs mt-1">Nueva cita manual</p>
+            <p className="text-blue-200 text-xs mt-0.5">Nueva cita manual</p>
           </Link>
+
           <Link to="/appointments"
                 className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow">
-            <span className="text-2xl block mb-2">☰</span>
+            <div className="w-8 h-8 mb-3 text-gray-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                   strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                <rect x="9" y="3" width="6" height="4" rx="1"/>
+                <path d="M9 12h6M9 16h4"/>
+              </svg>
+            </div>
             <p className="font-semibold text-sm text-gray-800">Listar Citas</p>
-            <p className="text-gray-400 text-xs mt-1">Buscar y filtrar</p>
+            <p className="text-gray-400 text-xs mt-0.5">Buscar y filtrar</p>
           </Link>
+
           <Link to="/appointments/export"
                 className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow">
-            <span className="text-2xl block mb-2">⬇</span>
+            <div className="w-8 h-8 mb-3 text-gray-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                   strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+                <path d="M12 3v13M8 12l4 4 4-4"/>
+                <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+              </svg>
+            </div>
             <p className="font-semibold text-sm text-gray-800">Exportar Citas</p>
-            <p className="text-gray-400 text-xs mt-1">Descargar en CSV</p>
+            <p className="text-gray-400 text-xs mt-0.5">Descargar en CSV</p>
           </Link>
+
         </div>
       </div>
     </div>
@@ -522,21 +557,40 @@ function AdminDashboard() {
         <div className="grid grid-cols-3 gap-4">
           <Link to="/appointments/new"
                 className="bg-blue-600 text-white rounded-2xl p-5 hover:bg-blue-700 transition-colors">
-            <span className="text-2xl block mb-2">⊕</span>
+            <div className="w-8 h-8 mb-3">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                   strokeLinecap="round" strokeLinejoin="round" className="w-full h-full opacity-90">
+                <rect x="3" y="4" width="18" height="18" rx="3"/>
+                <path d="M8 2v4M16 2v4M3 10h18M12 14v4M10 16h4"/>
+              </svg>
+            </div>
             <p className="font-semibold text-sm">Registrar Cita</p>
-            <p className="text-blue-200 text-xs mt-1">Nueva cita manual</p>
+            <p className="text-blue-200 text-xs mt-0.5">Nueva cita manual</p>
           </Link>
           <Link to="/appointments"
                 className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow">
-            <span className="text-2xl block mb-2">☰</span>
+            <div className="w-8 h-8 mb-3 text-gray-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                   strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                <rect x="9" y="3" width="6" height="4" rx="1"/>
+                <path d="M9 12h6M9 16h4"/>
+              </svg>
+            </div>
             <p className="font-semibold text-sm text-gray-800">Listar Citas</p>
-            <p className="text-gray-400 text-xs mt-1">Ver citas del día</p>
+            <p className="text-gray-400 text-xs mt-0.5">Ver citas del día</p>
           </Link>
           <Link to="/admin"
                 className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow">
-            <span className="text-2xl block mb-2">⚙</span>
+            <div className="w-8 h-8 mb-3 text-gray-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                   strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </div>
             <p className="font-semibold text-sm text-gray-800">Configuración</p>
-            <p className="text-gray-400 text-xs mt-1">Parámetros del sistema</p>
+            <p className="text-gray-400 text-xs mt-0.5">Parámetros del sistema</p>
           </Link>
         </div>
       </div>
