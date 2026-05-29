@@ -16,10 +16,13 @@ export default function AppointmentsPage() {
   const [doctors,        setDoctors]        = useState([])
   const [selectedDoctor, setSelectedDoctor] = useState('')
   const [selectedDate,   setSelectedDate]   = useState('')
+  const [selectedStatus, setSelectedStatus] = useState('')
   const [appointments,   setAppointments]   = useState([])
   const [patientCache,   setPatientCache]   = useState({})
   const [loading,        setLoading]        = useState(false)
   const [searched,       setSearched]       = useState(false)
+
+  const STATUSES = ['AGENDADA', 'REAGENDADA', 'ATENDIDA', 'CANCELADA']
 
   useEffect(() => {
     medicalApi.listDoctors()
@@ -44,7 +47,17 @@ export default function AppointmentsPage() {
           apts = apts.filter(apt => apt.doctorId === parseInt(selectedDoctor))
         }
 
-        apts = apts.filter(apt => apt.status === 'AGENDADA' || apt.status === 'REAGENDADA')
+        // Si no hay filtro de estado, mostrar solo activas por defecto
+        if (selectedStatus) {
+          apts = apts.filter(apt => apt.status === selectedStatus)
+        } else {
+          apts = apts.filter(apt => apt.status === 'AGENDADA' || apt.status === 'REAGENDADA')
+        }
+      }
+
+      // Filtro de estado cuando hay fecha seleccionada
+      if (selectedDate && selectedStatus) {
+        apts = apts.filter(apt => apt.status === selectedStatus)
       }
 
       setAppointments(apts)
@@ -97,8 +110,8 @@ export default function AppointmentsPage() {
 
           {/* Filtros */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-6">
-            <div className="flex gap-4 items-end">
-              <div className="flex-1">
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div>
                 <label className="block text-sm text-gray-500 mb-1">Profesional</label>
                 <select value={selectedDoctor} onChange={e => setSelectedDoctor(e.target.value)}
                         className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm
@@ -111,16 +124,28 @@ export default function AppointmentsPage() {
                   ))}
                 </select>
               </div>
-              <div className="flex-1">
+              <div>
                 <label className="block text-sm text-gray-500 mb-1">Fecha</label>
                 <input type="date" value={selectedDate}
                        onChange={e => setSelectedDate(e.target.value)}
                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm
                   focus:outline-none focus:border-blue-500 transition-colors" />
               </div>
-
+              <div>
+                <label className="block text-sm text-gray-500 mb-1">Estado</label>
+                <select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)}
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm
+                  focus:outline-none focus:border-blue-500 transition-colors">
+                  <option value="">Todos los estados</option>
+                  {STATUSES.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end">
               <button onClick={handleSearch} disabled={loading}
-                      className="flex items-center gap-2 bg-blue-600 text-white rounded-xl px-6 py-2.5
+                      className="bg-blue-600 text-white rounded-xl px-6 py-2.5
                 text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-40">
                 Buscar
               </button>
