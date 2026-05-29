@@ -36,8 +36,28 @@ export default function RegisterPage() {
   const [success, setSuccess]         = useState(false)
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-    setErrors({ ...errors, [e.target.name]: '' })
+    const { name, value } = e.target
+    const updated = { ...form, [name]: value }
+    setForm(updated)
+
+    // Validación en tiempo real del correo
+    if (name === 'email') {
+      if (!value.trim()) {
+        setErrors(prev => ({ ...prev, email: '' }))
+      } else if (!/^[\w._%+\-]+@[\w.\-]+\.[a-zA-Z]{2,}$/.test(value)) {
+        setErrors(prev => ({ ...prev, email: 'Formato de correo inválido' }))
+      } else {
+        const domain = value.trim().split('@')[1]?.toLowerCase()
+        setErrors(prev => ({
+          ...prev,
+          email: ALLOWED_DOMAINS.includes(domain)
+            ? ''
+            : `Dominio no permitido. Usa: ${ALLOWED_DOMAINS.join(', ')}`,
+        }))
+      }
+    } else {
+      setErrors(prev => ({ ...prev, [name]: '' }))
+    }
   }
 
   const validate = () => {
@@ -326,8 +346,7 @@ export default function RegisterPage() {
 }
 
 // --- Campo de texto estándar ---
-function Field({ label, name, value, onChange, error, required, type = 'text', placeholder = '', hint, submitted }) {
-  const showHint = hint && !(submitted && error)
+function Field({ label, name, value, onChange, error, required, type = 'text', placeholder = '', hint }) {
   return (
       <div>
         <label className="block text-sm text-gray-500 mb-1">
@@ -337,9 +356,9 @@ function Field({ label, name, value, onChange, error, required, type = 'text', p
                placeholder={placeholder}
                className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors
           ${error ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'}`} />
-        {submitted && error
+        {error
           ? <p className="text-red-500 text-xs mt-1">{error}</p>
-          : showHint && <p className="text-gray-400 text-xs mt-1">{hint}</p>
+          : hint && <p className="text-gray-400 text-xs mt-1">{hint}</p>
         }
       </div>
   )
