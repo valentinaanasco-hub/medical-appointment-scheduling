@@ -17,7 +17,7 @@ export default function AppointmentsPage() {
   const [selectedDoctor, setSelectedDoctor] = useState('')
   const [selectedDate,   setSelectedDate]   = useState('')
   const [appointments,   setAppointments]   = useState([])
-  const [patientInfo,    setPatientInfo]    = useState({}) // cache: {patientId: {name, phone}}
+  const [patientCache,   setPatientCache]   = useState({})
   const [loading,        setLoading]        = useState(false)
   const [searched,       setSearched]       = useState(false)
 
@@ -32,49 +32,44 @@ export default function AppointmentsPage() {
     setSearched(true)
     try {
       let apts = []
-      
+
       if (selectedDate) {
-        // Si hay fecha seleccionada, buscar por doctor y fecha
         const res = await appointmentApi.listByDoctorAndDate(selectedDoctor, selectedDate)
         apts = res.data || []
       } else {
-        // Si no hay fecha, obtener todas las citas agendadas
         const res = await appointmentApi.listAll()
         apts = res.data || []
-        
-        // Filtrar por doctor si está seleccionado
+
         if (selectedDoctor) {
           apts = apts.filter(apt => apt.doctorId === parseInt(selectedDoctor))
         }
-        
-        // Filtrar solo citas agendadas (no atendidas ni canceladas)
+
         apts = apts.filter(apt => apt.status === 'AGENDADA' || apt.status === 'REAGENDADA')
       }
-      
+
       setAppointments(apts)
 
-      // Cargar info de pacientes únicos
+      // Nombre (identity-service) + teléfono (patient-service) en paralelo
       const uniqueIds = [...new Set(apts.map(a => a.patientId).filter(Boolean))]
-      const infoMap   = { ...patientInfo }
+      const cache     = { ...patientCache }
 
       await Promise.all(uniqueIds.map(async id => {
-        if (infoMap[id]) return
+        if (cache[id]) return
         try {
-          // Nombre desde identity-service (los nombres son @Transient en patient-service)
-          const [idRes, patRes] = await Promise.allSettled([
-            identityApi.getUserById(id),
-            patientApi.getById(id),
+          const [idRes, patRes] = await Promise.all([
+            identityApi.getUserById(id).catch(() => null),
+            patientApi.getById(id).catch(() => null),
           ])
-          infoMap[id] = {
-            name:  idRes.status  === 'fulfilled' ? (idRes.value.data?.fullName  || `Paciente ${id}`) : `Paciente ${id}`,
-            phone: patRes.status === 'fulfilled' ? (patRes.value.data?.phone    || '—')              : '—',
+          cache[id] = {
+            name:  idRes?.data?.fullName || `Paciente ${id}`,
+            phone: patRes?.data?.phone   || '—',
           }
         } catch {
-          infoMap[id] = { name: `Paciente ${id}`, phone: '—' }
+          cache[id] = { name: `Paciente ${id}`, phone: '—' }
         }
       }))
 
-      setPatientInfo(infoMap)
+      setPatientCache(cache)
     } catch {
       setAppointments([])
     } finally {
@@ -97,16 +92,14 @@ export default function AppointmentsPage() {
           <div className="mb-6">
             <p className="text-sm text-gray-400 mb-1">Administración / Listado de Citas</p>
             <h1 className="text-2xl font-bold text-gray-800">Listado de Citas</h1>
-            <p className="text-gray-500 text-sm mt-1">
-              Busca y filtra todas las citas médicas programadas.
-            </p>
+            <p className="text-gray-500 text-sm mt-1">Busca y filtra todas las citas médicas programadas.</p>
           </div>
 
           {/* Filtros */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-6">
             <div className="flex gap-4 items-end">
               <div className="flex-1">
-                <label className="block text-sm text-gray-500 mb-1">Profesional o terapista</label>
+                <label className="block text-sm text-gray-500 mb-1">Profesional</label>
                 <select value={selectedDoctor} onChange={e => setSelectedDoctor(e.target.value)}
                         className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm
                   focus:outline-none focus:border-blue-500 transition-colors">
@@ -118,7 +111,6 @@ export default function AppointmentsPage() {
                   ))}
                 </select>
               </div>
-
               <div className="flex-1">
                 <label className="block text-sm text-gray-500 mb-1">Fecha</label>
                 <input type="date" value={selectedDate}
@@ -162,7 +154,7 @@ export default function AppointmentsPage() {
                       </tr>
                   ) : (
                       appointments.map(apt => {
-                        const info   = patientInfo[apt.patientId] || {}
+                        const info   = patientCache[apt.patientId] || {}
                         const doctor = doctors.find(d => d.id === apt.doctorId)
                         return (
                             <tr key={apt.appointmentId || apt.id} className="hover:bg-gray-50 transition-colors">
@@ -173,13 +165,13 @@ export default function AppointmentsPage() {
                                 {formatTime(apt.startTime)}
                               </td>
                               <td className="px-6 py-4 text-gray-700">
-                                {info.name || apt.patientName || `Paciente ${apt.patientId}`}
+                                {info.name || `Paciente ${apt.patientId}`}
                               </td>
                               <td className="px-6 py-4 text-gray-700">
                                 {doctor?.fullName || `Médico ${apt.doctorId}`}
                               </td>
                               <td className="px-6 py-4 text-gray-500">
-                                {info.phone || apt.patientPhone || '—'}
+                                {info.phone || '—'}
                               </td>
                               <td className="px-6 py-4 text-gray-500">{apt.reason || 'General'}</td>
                               <td className="px-6 py-4">
