@@ -194,56 +194,73 @@ function DoctorSpecialty({ doctorId }) {
 
 // ── Dashboard para AGENDADOR ─────────────────────────────────────────────────
 function AgendadorDashboard({ user }) {
-  const today = new Date().toISOString().split('T')[0]
-
-  const [totalPatients,  setTotalPatients]  = useState(null)
-  const [todayTotal,     setTodayTotal]     = useState(null)
-  const [todayPending,   setTodayPending]   = useState(null)
-  const [weekCount,      setWeekCount]      = useState(null)
-  const [nextApts,       setNextApts]       = useState([])   // próximas citas del día
-  const [doctors,        setDoctors]        = useState([])
+  const [allApts,       setAllApts]       = useState(null)   // todas las citas
+  const [doctors,       setDoctors]       = useState([])
+  const [totalPatients, setTotalPatients] = useState(null)
+  const [loading,       setLoading]       = useState(true)
 
   useEffect(() => {
-    // Total pacientes
-    patientApi.listAll()
-      .then(res => setTotalPatients(res.data?.length ?? 0))
-      .catch(() => setTotalPatients(0))
-
-    // Médicos
-    medicalApi.listDoctors()
-      .then(res => setDoctors(res.data || []))
-      .catch(() => {})
-
-    // Citas de hoy (todos los doctores)
-    appointmentApi.listByDoctorAndDate('', today)
-      .then(res => {
-        const apts = res.data || []
-        setTodayTotal(apts.length)
-        setTodayPending(apts.filter(a => a.status === 'AGENDADA' || a.status === 'REAGENDADA').length)
-        // Las próximas 3 pendientes ordenadas por hora
-        const upcoming = apts
-          .filter(a => a.status === 'AGENDADA' || a.status === 'REAGENDADA')
-          .sort((a, b) => a.startTime.localeCompare(b.startTime))
-          .slice(0, 3)
-        setNextApts(upcoming)
-      })
-      .catch(() => { setTodayTotal(0); setTodayPending(0) })
-
-    // Citas de la semana
-    Promise.all(
-      getWeekDays().map(d =>
-        appointmentApi.listByDoctorAndDate('', d).catch(() => ({ data: [] }))
-      )
-    ).then(results => {
-      setWeekCount(results.reduce((sum, r) => sum + (r.data || []).length, 0))
+    Promise.allSettled([
+      appointmentApi.listAll(),
+      medicalApi.listDoctors(),
+      patientApi.listAll(),
+    ]).then(([aptsRes, docsRes, patsRes]) => {
+      setAllApts(aptsRes.status === 'fulfilled' ? aptsRes.value.data || [] : [])
+      setDoctors(docsRes.status === 'fulfilled' ? docsRes.value.data || [] : [])
+      setTotalPatients(patsRes.status === 'fulfilled' ? patsRes.value.data?.length ?? 0 : 0)
+      setLoading(false)
     })
   }, [])
 
-  const formatTime = (t) => typeof t === 'string' ? t.substring(0, 5) : t
+  const today = new Date().toISOString().split('T')[0]
+
+  // Métricas derivadas de allApts
+  const activeApts   = allApts ? allApts.filter(a => a.status === 'AGENDADA' || a.status === 'REAGENDADA') : []
+  const todayApts    = allApts ? allApts.filter(a => a.date === today) : []
+  const todayPending = todayApts.filter(a => a.status === 'AGENDADA' || a.status === 'REAGENDADA')
+
+  // Distribución por estado
+  const statusCount = allApts ? allApts.reduce((acc, a) => {
+    acc[a.status] = (acc[a.status] || 0) + 1
+    return acc
+  }, {}) : {}
+
+  // Próximas 5 citas activas ordenadas por fecha y hora
+  const upcomingApts = [...activeApts]
+    .sort((a, b) => a.date === b.date
+      ? a.startTime.localeCompare(b.startTime)
+      : a.date.localeCompare(b.date))
+    .slice(0, 5)
+
   const getDoctorName = (id) => doctors.find(d => d.id === id)?.fullName || `Médico ${id}`
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '—'
+    const [y, m, d] = dateStr.split('-')
+    const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
+    return `${parseInt(d)} ${months[parseInt(m) - 1]}`
+  }
+
+  const formatTime = (t) => typeof t === 'string' ? t.substring(0, 5) : t
+
+  const STATUS_BADGE = {
+    AGENDADA:    'bg-green-100 text-green-700',
+    REAGENDADA:  'bg-blue-100 text-blue-700',
+    ATENDIDA:    'bg-gray-100 text-gray-600',
+    CANCELADA:   'bg-red-100 text-red-700',
+    NO_ASISTIO:  'bg-orange-100 text-orange-700',
+  }
+
+  const STATUS_LABEL = {
+    AGENDADA:   'Agendada',
+    REAGENDADA: 'Reagendada',
+    ATENDIDA:   'Atendida',
+    CANCELADA:  'Cancelada',
+    NO_ASISTIO: 'No asistió',
+  }
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto">
 
       {/* Encabezado */}
       <div className="flex items-start justify-between mb-8">
@@ -252,7 +269,7 @@ function AgendadorDashboard({ user }) {
             Bienvenido, {user?.fullName?.split(' ')[0] || 'Agendador'}
           </h1>
           <p className="text-gray-500 text-sm mt-1">
-            {formatDateFull(new Date())} — resumen de citas del día.
+            {formatDateFull(new Date())}
           </p>
         </div>
         <Link to="/appointments/new"
@@ -262,96 +279,143 @@ function AgendadorDashboard({ user }) {
         </Link>
       </div>
 
-      {/* Tarjetas */}
-      <div className="grid grid-cols-2 gap-5 mb-8">
+      {/* Tarjetas de métricas */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl bg-blue-50">📅</div>
-          <div className="flex-1">
-            <p className="text-sm text-gray-500">Citas hoy</p>
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-3xl font-bold text-blue-600">
-                {todayTotal ?? <span className="text-gray-300 text-xl">...</span>}
-              </p>
-              <Link to="/appointments" className="text-sm text-blue-600 hover:underline font-medium">
-                Ver todas
-              </Link>
-            </div>
-          </div>
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-lg mb-3">📅</div>
+          <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Citas activas</p>
+          <p className="text-3xl font-bold text-blue-600 mt-1">
+            {loading ? <span className="text-gray-200 text-xl">...</span> : activeApts.length}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Agendadas + Reagendadas</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl bg-orange-50">🕐</div>
-          <div className="flex-1">
-            <p className="text-sm text-gray-500">Pendientes hoy</p>
-            <p className="text-3xl font-bold text-orange-500 mt-1">
-              {todayPending ?? <span className="text-gray-300 text-xl">...</span>}
-            </p>
-          </div>
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-lg mb-3">🕐</div>
+          <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Citas hoy</p>
+          <p className="text-3xl font-bold text-orange-500 mt-1">
+            {loading ? <span className="text-gray-200 text-xl">...</span> : todayApts.length}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            {todayPending.length} pendiente{todayPending.length !== 1 ? 's' : ''}
+          </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl bg-purple-50">📋</div>
-          <div className="flex-1">
-            <p className="text-sm text-gray-500">Citas esta semana</p>
-            <p className="text-3xl font-bold text-purple-600 mt-1">
-              {weekCount ?? <span className="text-gray-300 text-xl">...</span>}
-            </p>
-          </div>
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-lg mb-3">👥</div>
+          <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Pacientes</p>
+          <p className="text-3xl font-bold text-purple-600 mt-1">
+            {loading ? <span className="text-gray-200 text-xl">...</span> : (totalPatients ?? 0)}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Registrados en el sistema</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl bg-blue-50">👥</div>
-          <div className="flex-1">
-            <p className="text-sm text-gray-500">Total pacientes</p>
-            <p className="text-3xl font-bold text-blue-600 mt-1">
-              {totalPatients ?? <span className="text-gray-300 text-xl">...</span>}
-            </p>
-          </div>
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-lg mb-3">🩺</div>
+          <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Médicos</p>
+          <p className="text-3xl font-bold text-green-600 mt-1">
+            {loading ? <span className="text-gray-200 text-xl">...</span> : doctors.length}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Disponibles para agendar</p>
         </div>
 
       </div>
 
-      {/* Próximas citas del día */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-700">Próximas citas pendientes hoy</h2>
-          <Link to="/appointments" className="text-sm text-blue-600 hover:underline font-medium">
-            Ver todas
-          </Link>
+      <div className="grid grid-cols-3 gap-6 mb-6">
+
+        {/* Próximas citas */}
+        <div className="col-span-2 bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-700">Próximas citas agendadas</h2>
+            <Link to="/appointments" className="text-xs text-blue-600 hover:underline font-medium">
+              Ver todas
+            </Link>
+          </div>
+
+          {loading ? (
+            <p className="text-sm text-gray-300 text-center py-8">Cargando...</p>
+          ) : upcomingApts.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-gray-400">No hay citas activas próximas</p>
+              <Link to="/appointments/new"
+                    className="text-xs text-blue-600 hover:underline mt-1 inline-block">
+                Registrar primera cita
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {upcomingApts.map(apt => (
+                <div key={apt.appointmentId}
+                     className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+                  {/* Fecha */}
+                  <div className="w-12 text-center shrink-0">
+                    <p className="text-xs font-bold text-blue-600">{formatDate(apt.date)}</p>
+                    <p className="text-xs text-gray-400">{formatTime(apt.startTime)}</p>
+                  </div>
+                  {/* Separador */}
+                  <div className="w-px h-8 bg-gray-100 shrink-0" />
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">
+                      {getDoctorName(apt.doctorId)}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {apt.reason || 'Sin motivo especificado'}
+                    </p>
+                  </div>
+                  {/* Estado */}
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shrink-0
+                    ${STATUS_BADGE[apt.status] || 'bg-gray-100 text-gray-600'}`}>
+                    {STATUS_LABEL[apt.status] || apt.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {nextApts.length === 0 ? (
-          <p className="text-sm text-gray-400">
-            {todayPending === 0 ? 'No hay citas pendientes para hoy.' : 'Cargando...'}
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {nextApts.map(apt => (
-              <div key={apt.appointmentId}
-                   className="flex items-center gap-4 p-3 rounded-xl border border-gray-50 hover:bg-gray-50 transition-colors">
-                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
-                  <span className="text-white text-xs font-bold">{formatTime(apt.startTime)}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">
-                    {getDoctorName(apt.doctorId)}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5 truncate">
-                    {apt.reason || 'Sin motivo'} · Paciente #{apt.patientId}
-                  </p>
-                </div>
-                <span className="text-xs px-2.5 py-1 bg-green-100 text-green-700 font-semibold
-                  rounded-full shrink-0">{apt.status}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Distribución por estado */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">Estado de citas</h2>
+          {loading ? (
+            <p className="text-sm text-gray-300 text-center py-8">Cargando...</p>
+          ) : (
+            <div className="space-y-3">
+              {[
+                { key: 'AGENDADA',   label: 'Agendadas',   color: 'bg-green-500' },
+                { key: 'REAGENDADA', label: 'Reagendadas', color: 'bg-blue-500'  },
+                { key: 'ATENDIDA',   label: 'Atendidas',   color: 'bg-gray-400'  },
+                { key: 'CANCELADA',  label: 'Canceladas',  color: 'bg-red-400'   },
+                { key: 'NO_ASISTIO', label: 'No asistió',  color: 'bg-orange-400'},
+              ].map(({ key, label, color }) => {
+                const count = statusCount[key] || 0
+                const total = allApts?.length || 1
+                const pct   = Math.round((count / total) * 100)
+                return (
+                  <div key={key}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-600">{label}</span>
+                      <span className="font-semibold text-gray-700">{count}</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-full ${color} rounded-full transition-all`}
+                           style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+              <p className="text-xs text-gray-400 pt-1 text-right">
+                Total: {allApts?.length || 0} citas
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Acciones rápidas */}
       <div>
-        <h2 className="text-base font-semibold text-gray-700 mb-4">Acciones rápidas</h2>
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Acciones rápidas</h2>
         <div className="grid grid-cols-3 gap-4">
           <Link to="/appointments/new"
                 className="bg-blue-600 text-white rounded-2xl p-5 hover:bg-blue-700 transition-colors">
