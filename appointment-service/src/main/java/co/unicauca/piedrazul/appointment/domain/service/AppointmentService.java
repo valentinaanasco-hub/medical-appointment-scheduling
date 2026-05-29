@@ -87,7 +87,7 @@ public class AppointmentService implements IAppointmentService {
     @Transactional
     public Appointment markAsNoShow(int appointmentId) {
         Appointment appointment = findById(appointmentId);
-        appointment.setStatus(AppointmentStatus.NO_ASISTIDO);
+        appointment.setStatus(AppointmentStatus.NO_ASISTIO);
         Appointment saved = appointmentRepository.save(appointment);
         eventPublisher.publishAppointmentCreated(appointment);
         return saved;

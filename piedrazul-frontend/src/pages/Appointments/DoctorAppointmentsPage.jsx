@@ -15,7 +15,7 @@ const STATUS_COLORS = {
   REAGENDADA:  'bg-purple-100 text-purple-700',
   ATENDIDA:    'bg-green-100 text-green-700',
   CANCELADA:   'bg-red-100 text-red-700',
-  NO_ASISTIDO: 'bg-orange-100 text-orange-700',
+  NO_ASISTIO: 'bg-orange-100 text-orange-700',
 }
 
 const STATUS_LABELS = {
@@ -23,7 +23,7 @@ const STATUS_LABELS = {
   REAGENDADA:  'Reagendada',
   ATENDIDA:    'Atendida',
   CANCELADA:   'Cancelada',
-  NO_ASISTIDO: 'No asistió',
+  NO_ASISTIO: 'No asistió',
 }
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -35,7 +35,7 @@ function StatusModal({ appointment, onClose, onConfirm, updating }) {
 
   const options = [
     { value: 'ATENDIDA',    label: 'Marcar como Atendida' },
-    { value: 'NO_ASISTIDO', label: 'Marcar como No asistió' },
+    { value: 'NO_ASISTIO', label: 'Marcar como No asistió' },
     { value: 'CANCELADA',   label: 'Cancelar cita' },
   ]
 
@@ -271,7 +271,7 @@ export default function DoctorAppointmentsPage() {
     try {
       if (newStatus === 'ATENDIDA')         await appointmentApi.markAsAttended(appointmentId)
       else if (newStatus === 'CANCELADA')   await appointmentApi.cancel(appointmentId)
-      else if (newStatus === 'NO_ASISTIDO') await appointmentApi.markAsNoShow(appointmentId)
+      else if (newStatus === 'NO_ASISTIO') await appointmentApi.markAsNoShow(appointmentId)
       setStatusModal(null)
       await loadAppointments()
     } catch (err) {
